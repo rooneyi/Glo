@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Réceptions — MNL{% endblock %}
+{% block page_title %}Réceptions de maïs{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Magasin · Réceptions</p>{% endblock %}
+
+{% block topbar_actions %}
+{% if user.role in 'ADMIN,MAGASINIER' %}
+<a href="{% url 'magasin:stock' %}" class="btn-secondary">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+  </svg>
+  Stock MP
+</a>
+<a href="{% url 'magasin:reception_create' %}" class="btn-primary">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+  </svg>
+  Nouvelle réception
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card overflow-hidden">
+  <div class="px-5 py-4 border-b border-zinc-100 flex flex-wrap items-center gap-3">
+    <form method="get" class="flex gap-3 flex-1">
+      <input type="text" name="q" value="{{ request.GET.q }}"
+        placeholder="N° bon, nom client…"
+        class="w-64 px-3 py-2 text-sm border border-zinc-300 rounded-lg bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors placeholder-zinc-400">
+      <button type="submit" class="btn-secondary">Filtrer</button>
+    </form>
+    <span class="text-xs text-zinc-400">{{ page_obj.paginator.count }} réception{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-zinc-50 border-b border-zinc-200">
+        <tr>
+          <th class="table-th">N° Bon</th>
+          <th class="table-th">Client / Contrat</th>
+          <th class="table-th">Poids brut</th>
+          <th class="table-th">Poids net</th>
+          <th class="table-th">Déchet</th>
+          <th class="table-th">Échantillon</th>
+          <th class="table-th">Date</th>
+          <th class="table-th text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-100">
+        {% for r in page_obj %}
+        <tr class="hover:bg-zinc-50 transition-colors">
+          <td class="table-td">
+            <span class="font-mono text-xs font-semibold text-zinc-800 bg-zinc-100 px-2 py-0.5 rounded">{{ r.numero_bon }}</span>
+          </td>
+          <td class="table-td">
+            <p class="font-medium text-zinc-900">{{ r.contrat.client }}</p>
+            <p class="text-xs text-zinc-400 font-mono">{{ r.contrat.numero_contrat }}</p>
+          </td>
+          <td class="table-td text-zinc-700">{{ r.poids_brut_kg|floatformat:1 }} <span class="text-zinc-400 text-xs">kg</span></td>
+          <td class="table-td font-semibold text-zinc-900">{{ r.poids_net_kg|floatformat:1 }} <span class="text-zinc-400 text-xs font-normal">kg</span></td>
+          <td class="table-td text-red-500 text-xs">
+            {% widthratio r.poids_brut_kg|add:"0" 1 1 as brut %}
+            -{{ r.poids_brut_kg|add:"-"|add:r.poids_net_kg|floatformat:1 }} kg
+          </td>
+          <td class="table-td">
+            {% if r.echantillon %}
+              <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full
+                {% if r.echantillon.statut == 'TESTE' %}bg-green-50 text-green-700
+                {% elif r.echantillon.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+                {% else %}bg-yellow-50 text-yellow-700{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full
+                  {% if r.echantillon.statut == 'TESTE' %}bg-green-500
+                  {% elif r.echantillon.statut == 'EN_COURS' %}bg-blue-500
+                  {% else %}bg-yellow-500{% endif %}"></span>
+                {{ r.echantillon.get_statut_display|truncatewords:2 }}
+              </span>
+            {% else %}
+              <span class="text-xs text-zinc-400 italic">Sans échantillon</span>
+            {% endif %}
+          </td>
+          <td class="table-td text-zinc-400">{{ r.date_reception|date:"d/m/Y" }}</td>
+          <td class="table-td text-right">
+            <div class="flex items-center justify-end gap-1">
+              <a href="{% url 'magasin:reception_detail' r.pk %}"
+                class="p-1.5 rounded-md text-zinc-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Voir le détail">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </a>
+              <a href="{% url 'magasin:reception_pdf' r.pk %}"
+                class="p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Imprimer le bon PDF">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="py-16 text-center">
+            <svg class="w-10 h-10 text-zinc-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            <p class="text-sm text-zinc-400">Aucune réception enregistrée</p>
+            {% if user.role in 'ADMIN,MAGASINIER' %}
+            <a href="{% url 'magasin:reception_create' %}" class="btn-primary mt-4 inline-flex">Enregistrer la première réception</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-4 border-t border-zinc-100 flex items-center justify-between">
+    <p class="text-xs text-zinc-400">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="px-3 py-1.5 text-xs border border-zinc-300 rounded-md text-zinc-600 hover:bg-zinc-50">← Précédent</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="px-3 py-1.5 text-xs border border-zinc-300 rounded-md text-zinc-600 hover:bg-zinc-50">Suivant →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

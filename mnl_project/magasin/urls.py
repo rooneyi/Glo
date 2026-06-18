@@ -1,0 +1,12 @@
+from django.urls import path
+from . import views
+
+app_name = 'magasin'
+
+urlpatterns = [
+    path('receptions/',              views.ListeReceptionsView.as_view(),   name='receptions_list'),
+    path('receptions/new/',          views.CreerReceptionView.as_view(),    name='reception_create'),
+    path('receptions/<int:pk>/',     views.DetailReceptionView.as_view(),   name='reception_detail'),
+    path('receptions/<int:pk>/pdf/', views.ImprimerBonReceptionView.as_view(), name='reception_pdf'),
+    path('stock/',                   views.StockMPView.as_view(),           name='stock'),
+]

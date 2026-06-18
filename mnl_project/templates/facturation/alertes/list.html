@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Alertes — MNL{% endblock %}
+{% block page_title %}Mes alertes{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Notifications</p>{% endblock %}
+
+{% block topbar_actions %}
+{% if non_lues %}
+<form method="post" action="{% url 'facturation:alertes_tout_lu' %}">
+  {% csrf_token %}
+  <button type="submit" class="btn-secondary text-xs">Tout marquer comme lu</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card overflow-hidden">
+  <div class="px-5 py-4 border-b border-zinc-100">
+    <span class="text-xs text-zinc-400">{{ non_lues }} non lue{{ non_lues|pluralize }}</span>
+  </div>
+  <div class="divide-y divide-zinc-100">
+    {% for a in page_obj %}
+    <div class="px-5 py-4 flex items-start gap-4 {% if not a.lu %}bg-blue-50/50{% endif %}">
+      <div class="w-2 h-2 rounded-full mt-2 shrink-0 {% if a.lu %}bg-zinc-300{% else %}bg-blue-500{% endif %}"></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-zinc-500">{{ a.get_type_display }}</p>
+        <p class="text-sm text-zinc-800 mt-0.5">{{ a.message }}</p>
+        <p class="text-xs text-zinc-400 mt-1">{{ a.date_creation|date:"d/m/Y H:i" }}</p>
+      </div>
+      {% if not a.lu %}
+      <form method="post" action="{% url 'facturation:alerte_lu' a.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-blue-600 hover:text-blue-800 whitespace-nowrap">Marquer lu</button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p class="py-16 text-center text-zinc-400 text-sm">Aucune alerte</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

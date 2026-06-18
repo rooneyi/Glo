@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouvel échantillon — MNL{% endblock %}
+{% block page_title %}Envoyer un échantillon au laboratoire{% endblock %}
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400">
+  <a href="{% url 'laboratoire:echantillons_list' %}" class="hover:text-zinc-700">Échantillons</a> / Nouveau
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Envoi d'échantillon — Labo Likasi</h2>
+      <p class="text-xs text-zinc-400 mt-0.5">Le numéro ECH est généré automatiquement. Une alerte sera envoyée au meunier dès réception du résultat.</p>
+    </div>
+    <form method="post" class="px-6 py-6 space-y-5">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+        {% for e in form.non_field_errors %}<p class="text-sm text-red-700">{{ e }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Réception -->
+      <div>
+        <label class="form-label" for="{{ form.reception.id_for_label }}">
+          Réception de maïs <span class="text-red-500">*</span>
+        </label>
+        <select name="reception" id="{{ form.reception.id_for_label }}"
+          class="form-input {% if form.reception.errors %}border-red-400{% endif %}">
+          <option value="">— Choisir une réception —</option>
+          {% for r in form.fields.reception.queryset %}
+          <option value="{{ r.pk }}" {% if form.reception.value|stringformat:"s" == r.pk|stringformat:"s" %}selected{% endif %}>
+            {{ r.numero_bon }} — {{ r.contrat.client }} ({{ r.poids_net_kg|floatformat:0 }} kg)
+          </option>
+          {% endfor %}
+        </select>
+        {% if form.reception.errors %}<p class="form-error">{{ form.reception.errors|join:", " }}</p>{% endif %}
+        <p class="text-xs text-zinc-400 mt-1">Seules les réceptions sans échantillon existant sont affichées.</p>
+      </div>
+
+      <!-- Meunier -->
+      <div>
+        <label class="form-label" for="{{ form.meunier.id_for_label }}">
+          Meunier assigné <span class="text-red-500">*</span>
+        </label>
+        <select name="meunier" id="{{ form.meunier.id_for_label }}"
+          class="form-input {% if form.meunier.errors %}border-red-400{% endif %}">
+          <option value="">— Choisir un meunier —</option>
+          {% for m in form.fields.meunier.queryset %}
+          <option value="{{ m.pk }}" {% if form.meunier.value|stringformat:"s" == m.pk|stringformat:"s" %}selected{% endif %}>
+            {{ m.get_full_name }}
+          </option>
+          {% endfor %}
+        </select>
+        {% if form.meunier.errors %}<p class="form-error">{{ form.meunier.errors|join:", " }}</p>{% endif %}
+        <p class="text-xs text-zinc-400 mt-1">Ce meunier recevra une alerte dès que le résultat sera disponible.</p>
+      </div>
+
+      <!-- Date envoi -->
+      <div>
+        <label class="form-label" for="{{ form.date_envoi_labo.id_for_label }}">
+          Date d'envoi au labo <span class="text-red-500">*</span>
+        </label>
+        <input type="date" name="date_envoi_labo" id="{{ form.date_envoi_labo.id_for_label }}"
+          value="{{ form.date_envoi_labo.value|default:'' }}"
+          class="form-input {% if form.date_envoi_labo.errors %}border-red-400{% endif %}">
+        {% if form.date_envoi_labo.errors %}<p class="form-error">{{ form.date_envoi_labo.errors|join:", " }}</p>{% endif %}
+      </div>
+
+      <!-- Info seuils -->
+      <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <p class="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Seuils de conformité MNL
+        </p>
+        <div class="grid grid-cols-3 gap-3 text-xs text-amber-800">
+          <div class="text-center">
+            <p class="font-bold text-sm">≤ 14,0%</p>
+            <p>Humidité</p>
+          </div>
+          <div class="text-center border-x border-amber-200">
+            <p class="font-bold text-sm">≤ 0,05</p>
+            <p>Acidité</p>
+          </div>
+          <div class="text-center">
+            <p class="font-bold text-sm">≤ 5,0%</p>
+            <p>Matière grasse</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-zinc-100">
+        <a href="{% url 'laboratoire:echantillons_list' %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Enregistrer l'envoi
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

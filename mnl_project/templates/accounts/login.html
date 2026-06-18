@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — MNL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            navy: { 800: '#1e293b', 900: '#0f172a', 950: '#0a1628' },
+          },
+          borderRadius: { '4xl': '2rem' },
+        },
+      },
+    }
+  </script>
+  <style>
+    .panel-left {
+      background-image:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.75) 100%),
+        url('https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=1400&q=80');
+      background-size: cover;
+      background-position: center;
+    }
+    .form-panel {
+      border-top-left-radius: 2.5rem;
+    }
+    @media (min-width: 1024px) {
+      .form-panel {
+        border-top-left-radius: 3.5rem;
+        margin-left: -2.5rem;
+      }
+    }
+
+    /* Champs — CSS pur (le CDN Tailwind n'interprète pas @apply ici) */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    .input-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #334155;
+      letter-spacing: -0.01em;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      width: 1.125rem;
+      height: 1.125rem;
+      color: #94a3b8;
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+    .input-field {
+      display: block;
+      width: 100%;
+      height: 3rem;
+      padding: 0 1rem 0 2.75rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.25rem;
+      color: #0f172a;
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.625rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .input-field::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+    .input-field:hover {
+      border-color: #cbd5e1;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #64748b;
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.07);
+    }
+    .input-field.is-error {
+      border-color: #fca5a5;
+      background-color: #fef2f2;
+    }
+    .input-field.is-error:focus {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+      border-color: #f87171;
+    }
+    .input-error {
+      font-size: 0.75rem;
+      color: #dc2626;
+      margin-top: 0.125rem;
+    }
+    .btn-submit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 3rem;
+      margin-top: 0.5rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #ffffff;
+      background-color: #0f172a;
+      border: none;
+      border-radius: 0.625rem;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+    .btn-submit:hover {
+      background-color: #1e293b;
+    }
+    .btn-submit:active {
+      transform: scale(0.99);
+      background-color: #0a1628;
+    }
+    .btn-submit:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.3);
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased bg-white">
+
+  <div class="min-h-screen flex flex-col lg:flex-row">
+
+    <!-- Panneau gauche — visuel & branding -->
+    <div class="panel-left relative flex flex-col justify-between px-8 py-10 lg:px-12 lg:py-14 lg:w-[44%] lg:min-h-screen shrink-0 min-h-[220px]">
+
+      <div>
+        <span class="inline-block px-4 py-1.5 text-[10px] font-semibold tracking-[0.2em] text-white/90 border border-white/30 rounded-md uppercase">
+          Gécamines · RDC
+        </span>
+      </div>
+
+      <div class="hidden sm:block max-w-sm">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l9-3 9 3v2l-9 3-9-3V6z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9 3 9-3M3 18l9 3 9-3"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-white font-bold text-lg leading-tight">MNL</p>
+            <p class="text-white/60 text-xs">Minoterie de Lubumbashi</p>
+          </div>
+        </div>
+        <h2 class="text-3xl lg:text-4xl font-bold text-white leading-tight tracking-tight">
+          Gestion intégrée<br>de la mouture
+        </h2>
+        <p class="mt-4 text-sm text-white/70 leading-relaxed">
+          Contrats, réceptions, laboratoire, production et facturation — un seul espace pour toute l'équipe.
+        </p>
+      </div>
+
+      <p class="text-[11px] text-white/40 hidden lg:block">
+        © {% now "Y" %} Minoterie de Lubumbashi
+      </p>
+    </div>
+
+    <!-- Panneau droit — formulaire -->
+    <div class="form-panel relative flex-1 flex flex-col bg-white lg:shadow-[-20px_0_60px_-15px_rgba(0,0,0,0.08)] z-10">
+
+      <!-- En-tête -->
+      <div class="flex items-center justify-between px-6 sm:px-10 lg:px-14 pt-8 lg:pt-10">
+        <div class="sm:hidden flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-navy-900 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l9-3 9 3v2l-9 3-9-3V6z"/>
+            </svg>
+          </div>
+          <span class="font-bold text-slate-900 text-sm">MNL</span>
+        </div>
+        <div class="ml-auto flex items-center gap-2 text-sm text-slate-500">
+          <span class="hidden sm:inline">Accès personnel autorisé</span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-200 rounded-lg bg-slate-50">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Système actif
+          </span>
+        </div>
+      </div>
+
+      <!-- Formulaire centré -->
+      <div class="flex-1 flex items-center justify-center px-6 sm:px-10 lg:px-14 py-10 lg:py-0">
+        <div class="w-full max-w-md">
+
+          <div class="mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Connexion</h1>
+            <p class="mt-2 text-sm text-slate-500">
+              Entrez vos identifiants pour accéder au tableau de bord.
+            </p>
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="mb-6 px-4 py-3.5 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700 flex items-start gap-2.5">
+            <svg class="w-4 h-4 mt-0.5 shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span>{% for error in form.non_field_errors %}{{ error }}{% endfor %}</span>
+          </div>
+          {% endif %}
+
+          <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            <div class="input-group">
+              <label for="{{ form.username.id_for_label }}" class="input-label">Adresse e-mail</label>
+              <div class="input-wrap">
+                <svg class="input-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <input type="email" name="username" id="{{ form.username.id_for_label }}"
+                  class="input-field{% if form.username.errors %} is-error{% endif %}"
+                  placeholder="votre@email.com" autocomplete="email" autofocus
+                  value="{{ form.username.value|default:'' }}">
+              </div>
+              {% if form.username.errors %}
+              <p class="input-error">{{ form.username.errors|join:", " }}</p>
+              {% endif %}
+            </div>
+
+            <div class="input-group">
+              <label for="{{ form.password.id_for_label }}" class="input-label">Mot de passe</label>
+              <div class="input-wrap">
+                <svg class="input-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <input type="password" name="password" id="{{ form.password.id_for_label }}"
+                  class="input-field{% if form.password.errors %} is-error{% endif %}"
+                  placeholder="Entrez votre mot de passe" autocomplete="current-password">
+              </div>
+              {% if form.password.errors %}
+              <p class="input-error">{{ form.password.errors|join:", " }}</p>
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn-submit">Se connecter</button>
+          </form>
+
+          <p class="mt-8 text-center text-xs text-slate-400 leading-relaxed">
+            Pas de compte ? Contactez l'administrateur système.<br>
+            Accès réservé au personnel MNL autorisé.
+          </p>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6 text-center text-[11px] text-slate-300 lg:hidden">
+        © {% now "Y" %} Minoterie de Lubumbashi — Gécamines
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

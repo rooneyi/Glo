@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; padding: 30px 40px; color: #1a1a1a; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1d4ed8; padding-bottom: 16px; margin-bottom: 24px; }
+    .logo-title { font-size: 18pt; font-weight: bold; color: #1d4ed8; }
+    .logo-sub { font-size: 9pt; color: #666; }
+    .numero { font-family: monospace; font-size: 13pt; font-weight: bold; color: #1d4ed8; background: #dbeafe; padding: 4px 12px; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
+    td.lbl { color: #6b7280; width: 35%; }
+    td.val { font-weight: bold; }
+    .signatures { display: flex; gap: 30px; margin-top: 50px; }
+    .sig { flex: 1; border-top: 1px solid #9ca3af; padding-top: 8px; text-align: center; font-size: 9pt; color: #6b7280; }
+    .footer { margin-top: 40px; font-size: 8.5pt; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo-title">MNL — Gécamines</div>
+      <div class="logo-sub">Minoterie de Lubumbashi</div>
+    </div>
+    <div style="text-align:right">
+      <h2 style="margin:0;font-size:14pt">BON DE RETRAIT</h2>
+      <div class="numero">{{ bon.numero_bon }}</div>
+    </div>
+  </div>
+
+  <table>
+    <tr><td class="lbl">Client</td><td class="val">{{ bon.client }}</td></tr>
+    <tr><td class="lbl">N° Contrat</td><td class="val" style="font-family:monospace">{{ bon.contrat.numero_contrat }}</td></tr>
+    <tr><td class="lbl">Date de retrait</td><td class="val">{{ bon.date_retrait|date:"d/m/Y" }}</td></tr>
+    <tr><td class="lbl">Quantité (sacs)</td><td class="val">{{ bon.quantite_sacs }} sac(s) de farine</td></tr>
+    <tr><td class="lbl">Facture</td><td class="val">{% if bon.facture_reglee %}Réglée ✓{% else %}En attente{% endif %}</td></tr>
+    <tr><td class="lbl">Comptable</td><td class="val">{{ bon.comptable.get_full_name }}</td></tr>
+  </table>
+
+  <div class="signatures">
+    <div class="sig">Comptable<br><br><br>{{ bon.comptable.get_full_name }}</div>
+    <div class="sig">Magasinier<br><br><br>Signature & cachet</div>
+    <div class="sig">Client<br><br><br>Signature</div>
+  </div>
+
+  <div class="footer">
+    MNL — Minoterie de Lubumbashi (Gécamines) · Généré le {{ bon.date_creation|date:"d/m/Y à H:i" }}
+  </div>
+</body>
+</html>

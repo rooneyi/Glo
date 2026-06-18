@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ bon.numero_bon }} — MNL{% endblock %}
+{% block page_title %}Bon de retrait {{ bon.numero_bon }}{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400"><a href="{% url 'facturation:bons_list' %}">Bons</a> / {{ bon.numero_bon }}</p>{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'facturation:bon_pdf' bon.pk %}" class="btn-secondary">Imprimer PDF</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-4 border-b flex justify-between items-center">
+      <h2 class="text-sm font-semibold">Bon de retrait</h2>
+      <span class="font-mono text-sm font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">{{ bon.numero_bon }}</span>
+    </div>
+    <div class="px-6 py-5 grid grid-cols-2 gap-4">
+      <div><p class="text-xs text-zinc-400">Client</p><p class="font-semibold">{{ bon.client }}</p></div>
+      <div><p class="text-xs text-zinc-400">Contrat</p><p class="font-mono text-sm">{{ bon.contrat.numero_contrat }}</p></div>
+      <div><p class="text-xs text-zinc-400">Date retrait</p><p>{{ bon.date_retrait|date:"d/m/Y" }}</p></div>
+      <div><p class="text-xs text-zinc-400">Sacs retirés</p><p class="text-xl font-bold">{{ bon.quantite_sacs }}</p></div>
+      <div><p class="text-xs text-zinc-400">Paiement</p>
+        <p class="{% if bon.facture_reglee %}text-green-700{% else %}text-red-600{% endif %} font-medium">
+          {% if bon.facture_reglee %}Facture réglée{% else %}Non réglée{% endif %}
+        </p>
+      </div>
+      <div><p class="text-xs text-zinc-400">Comptable</p><p class="text-sm">{{ bon.comptable.get_full_name }}</p></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

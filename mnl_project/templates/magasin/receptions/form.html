@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouvelle réception — MNL{% endblock %}
+{% block page_title %}Enregistrer une réception de maïs{% endblock %}
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400">
+  <a href="{% url 'magasin:receptions_list' %}" class="hover:text-zinc-700">Réceptions</a> / Nouvelle
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Bon de réception — Maïs</h2>
+      <p class="text-xs text-zinc-400 mt-0.5">Le numéro BRC est généré automatiquement. La quantité nette sera ajoutée au stock MP.</p>
+    </div>
+
+    <form method="post" class="px-6 py-6 space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+        {% for e in form.non_field_errors %}<p class="text-sm text-red-700">{{ e }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Contrat -->
+      <div>
+        <label class="form-label" for="{{ form.contrat.id_for_label }}">
+          Contrat de mouture <span class="text-red-500">*</span>
+        </label>
+        <select name="contrat" id="{{ form.contrat.id_for_label }}"
+          class="form-input {% if form.contrat.errors %}border-red-400{% endif %}">
+          <option value="">— Choisir un contrat —</option>
+          {% for c in form.fields.contrat.queryset %}
+          <option value="{{ c.pk }}" {% if form.contrat.value|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>
+            {{ c.numero_contrat }} — {{ c.client }} ({{ c.quantite_kg|floatformat:0 }} kg)
+          </option>
+          {% endfor %}
+        </select>
+        {% if form.contrat.errors %}<p class="form-error">{{ form.contrat.errors|join:", " }}</p>{% endif %}
+        <p class="text-xs text-zinc-400 mt-1">Seuls les contrats sans réception existante sont affichés.</p>
+      </div>
+
+      <!-- Poids -->
+      <div class="p-5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-4">
+        <p class="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Pesée</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label" for="{{ form.poids_brut_kg.id_for_label }}">
+              Poids brut (kg) <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input type="number" name="poids_brut_kg" id="{{ form.poids_brut_kg.id_for_label }}"
+                value="{{ form.poids_brut_kg.value|default:'' }}"
+                step="0.1" min="0"
+                class="form-input pr-10 {% if form.poids_brut_kg.errors %}border-red-400{% endif %}"
+                placeholder="0.0" id="id_poids_brut">
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-medium">kg</span>
+            </div>
+            {% if form.poids_brut_kg.errors %}<p class="form-error">{{ form.poids_brut_kg.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="form-label" for="{{ form.poids_net_kg.id_for_label }}">
+              Poids net (kg) <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input type="number" name="poids_net_kg" id="{{ form.poids_net_kg.id_for_label }}"
+                value="{{ form.poids_net_kg.value|default:'' }}"
+                step="0.1" min="0"
+                class="form-input pr-10 {% if form.poids_net_kg.errors %}border-red-400{% endif %}"
+                placeholder="0.0" id="id_poids_net">
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-medium">kg</span>
+            </div>
+            {% if form.poids_net_kg.errors %}<p class="form-error">{{ form.poids_net_kg.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+        <!-- Indicateur perte -->
+        <div id="perte-indicator" class="hidden flex items-center gap-2 text-xs text-zinc-500">
+          <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Perte : <span id="perte-val" class="font-semibold text-orange-600"></span> kg
+          (<span id="perte-pct" class="font-semibold text-orange-600"></span>%)
+        </div>
+      </div>
+
+      <!-- Observations -->
+      <div>
+        <label class="form-label" for="{{ form.observations.id_for_label }}">Observations</label>
+        <textarea name="observations" id="{{ form.observations.id_for_label }}" rows="3"
+          class="form-input"
+          placeholder="État du maïs, conditions de livraison, remarques…">{{ form.observations.value|default:'' }}</textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-2 border-t border-zinc-100">
+        <a href="{% url 'magasin:receptions_list' %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Enregistrer la réception
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const brut = document.getElementById('id_poids_brut');
+  const net  = document.getElementById('id_poids_net');
+  const box  = document.getElementById('perte-indicator');
+  const valEl = document.getElementById('perte-val');
+  const pctEl = document.getElementById('perte-pct');
+
+  function update() {
+    const b = parseFloat(brut.value) || 0;
+    const n = parseFloat(net.value)  || 0;
+    if (b > 0 && n > 0 && b >= n) {
+      const perte = (b - n).toFixed(1);
+      const pct   = ((b - n) / b * 100).toFixed(1);
+      valEl.textContent = perte;
+      pctEl.textContent = pct;
+      box.classList.remove('hidden');
+      box.classList.add('flex');
+    } else {
+      box.classList.add('hidden');
+      box.classList.remove('flex');
+    }
+  }
+  brut.addEventListener('input', update);
+  net.addEventListener('input', update);
+  update();
+</script>
+{% endblock %}

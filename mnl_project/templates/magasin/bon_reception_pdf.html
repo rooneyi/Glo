@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 30px 40px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1d4ed8; padding-bottom: 16px; margin-bottom: 24px; }
+    .logo-block { }
+    .logo-title { font-size: 18pt; font-weight: bold; color: #1d4ed8; }
+    .logo-sub { font-size: 9pt; color: #666; margin-top: 2px; }
+    .doc-title { text-align: right; }
+    .doc-title h2 { font-size: 14pt; font-weight: bold; color: #1a1a1a; }
+    .doc-title .numero { font-size: 13pt; font-weight: bold; color: #1d4ed8; background: #dbeafe; padding: 3px 12px; border-radius: 4px; display: inline-block; margin-top: 4px; font-family: monospace; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; color: #6b7280; letter-spacing: 0.08em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 10px; }
+    table.info { width: 100%; border-collapse: collapse; }
+    table.info td { padding: 5px 6px; font-size: 10.5pt; }
+    table.info td.lbl { color: #6b7280; width: 38%; font-size: 10pt; }
+    table.info td.val { font-weight: bold; }
+    .poids-box { display: flex; gap: 0; margin: 12px 0; }
+    .poids-cell { flex: 1; border: 1px solid #d1d5db; padding: 14px 18px; }
+    .poids-cell:not(:last-child) { border-right: none; }
+    .poids-cell:first-child { border-radius: 6px 0 0 6px; }
+    .poids-cell:last-child { border-radius: 0 6px 6px 0; background: #eff6ff; }
+    .poids-cell .lbl { font-size: 9pt; color: #6b7280; margin-bottom: 4px; }
+    .poids-cell .val { font-size: 16pt; font-weight: bold; color: #1a1a1a; }
+    .poids-cell.net .val { color: #1d4ed8; }
+    .obs { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; font-size: 10pt; color: #374151; min-height: 50px; }
+    .signatures { display: flex; gap: 30px; margin-top: 40px; }
+    .sig-box { flex: 1; border-top: 1px solid #9ca3af; padding-top: 8px; text-align: center; font-size: 9pt; color: #6b7280; }
+    .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 8.5pt; color: #9ca3af; text-align: center; }
+    .confid { background: #fef9c3; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 4px; font-size: 9pt; color: #92400e; margin-bottom: 18px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo-block">
+      <div class="logo-title">MNL — Gécamines</div>
+      <div class="logo-sub">Minoterie de Lubumbashi</div>
+      <div class="logo-sub">Lubumbashi, République Démocratique du Congo</div>
+    </div>
+    <div class="doc-title">
+      <h2>BON DE RÉCEPTION</h2>
+      <div class="numero">{{ reception.numero_bon }}</div>
+    </div>
+  </div>
+
+  <div class="confid">Document interne — Magasin / Minoterie de Lubumbashi</div>
+
+  <!-- Client & Contrat -->
+  <div class="section">
+    <div class="section-title">Informations client & contrat</div>
+    <table class="info">
+      <tr>
+        <td class="lbl">Client</td>
+        <td class="val">{{ reception.contrat.client }}</td>
+        <td class="lbl">N° Contrat</td>
+        <td class="val" style="font-family:monospace">{{ reception.contrat.numero_contrat }}</td>
+      </tr>
+      <tr>
+        <td class="lbl">Date de réception</td>
+        <td class="val">{{ reception.date_reception|date:"d/m/Y" }}</td>
+        <td class="lbl">Magasinier</td>
+        <td class="val">{{ reception.magasinier.get_full_name }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Pesée -->
+  <div class="section">
+    <div class="section-title">Résultats de pesée — Maïs</div>
+    <div class="poids-box">
+      <div class="poids-cell">
+        <div class="lbl">Poids brut</div>
+        <div class="val">{{ reception.poids_brut_kg|floatformat:1 }} kg</div>
+      </div>
+      <div class="poids-cell net">
+        <div class="lbl">Poids net (stocké)</div>
+        <div class="val">{{ reception.poids_net_kg|floatformat:1 }} kg</div>
+      </div>
+    </div>
+    <p style="font-size:9.5pt; color:#6b7280; margin-top:6px;">
+      Quantité contractuelle : {{ reception.contrat.quantite_kg|floatformat:0 }} kg
+    </p>
+  </div>
+
+  <!-- Observations -->
+  <div class="section">
+    <div class="section-title">Observations</div>
+    <div class="obs">{{ reception.observations|default:"Aucune observation particulière." }}</div>
+  </div>
+
+  <!-- Signatures -->
+  <div class="signatures">
+    <div class="sig-box">Magasinier<br><br><br><br>{{ reception.magasinier.get_full_name }}</div>
+    <div class="sig-box">Chef de production<br><br><br><br>Signature &amp; cachet</div>
+    <div class="sig-box">Client / Représentant<br><br><br><br>Signature</div>
+  </div>
+
+  <div class="footer">
+    Minoterie de Lubumbashi (MNL) — Gécamines &nbsp;·&nbsp;
+    Document généré le {{ reception.date_creation|date:"d/m/Y à H:i" }} &nbsp;·&nbsp;
+    Ce document fait foi de réception de marchandise.
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Terminer mouture — MNL{% endblock %}
+{% block page_title %}Terminer {{ production.numero_production }}{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400"><a href="{% url 'production:detail' production.pk %}">{{ production.numero_production }}</a> / Clôture</p>{% endblock %}
+
+{% block content %}
+<div class="max-w-xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold">Clôturer la mouture</h2>
+      <p class="text-xs text-zinc-400 mt-1">Maïs traité : {{ production.quantite_traitee_kg|floatformat:0 }} kg</p>
+    </div>
+    <form method="post" class="px-6 py-6 space-y-5">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+      <div>
+        <label class="form-label">Date de fin *</label>
+        <input type="date" name="date_fin" value="{{ form.date_fin.value|default:'' }}" class="form-input">
+      </div>
+      <div>
+        <label class="form-label">Farine produite (kg) *</label>
+        <input type="number" step="0.1" name="quantite_farine_kg" value="{{ form.quantite_farine_kg.value|default:'' }}" class="form-input">
+      </div>
+      <div>
+        <label class="form-label">Pertes (kg)</label>
+        <input type="number" step="0.1" name="pertes_kg" value="{{ form.pertes_kg.value|default:'0' }}" class="form-input">
+      </div>
+      <div class="flex justify-between pt-2 border-t">
+        <a href="{% url 'production:detail' production.pk %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-primary">Terminer la mouture</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

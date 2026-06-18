@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ production.numero_production }} — MNL{% endblock %}
+{% block page_title %}Production {{ production.numero_production }}{% endblock %}
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400"><a href="{% url 'production:list' %}" class="hover:text-zinc-700">Productions</a> / {{ production.numero_production }}</p>
+{% endblock %}
+
+{% block topbar_actions %}
+{% if peut_terminer %}
+<a href="{% url 'production:terminer' production.pk %}" class="btn-primary">Terminer la mouture</a>
+{% endif %}
+{% if peut_ensacher %}
+<a href="{% url 'production:ensacher' production.pk %}" class="btn-secondary">+ Ensacher</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <div class="lg:col-span-2 space-y-5">
+    <div class="card overflow-hidden">
+      <div class="px-6 py-4 border-b border-zinc-100 flex justify-between items-center">
+        <h2 class="text-sm font-semibold text-zinc-800">Détails mouture</h2>
+        <span class="text-xs font-medium px-2 py-1 rounded-full
+          {% if production.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+          {% elif production.statut == 'TERMINE' %}bg-green-50 text-green-700
+          {% else %}bg-zinc-100{% endif %}">{{ production.get_statut_display }}</span>
+      </div>
+      <div class="px-6 py-5 grid grid-cols-2 gap-4">
+        <div><p class="text-xs text-zinc-400">Client</p><p class="text-sm font-semibold">{{ production.contrat.client }}</p></div>
+        <div><p class="text-xs text-zinc-400">Contrat</p><p class="text-sm font-mono">{{ production.contrat.numero_contrat }}</p></div>
+        <div><p class="text-xs text-zinc-400">Date début</p><p class="text-sm">{{ production.date_debut|date:"d/m/Y" }}</p></div>
+        <div><p class="text-xs text-zinc-400">Date fin</p><p class="text-sm">{{ production.date_fin|date:"d/m/Y"|default:"—" }}</p></div>
+        <div><p class="text-xs text-zinc-400">Maïs traité</p><p class="text-lg font-bold">{{ production.quantite_traitee_kg|floatformat:0 }} kg</p></div>
+        <div><p class="text-xs text-zinc-400">Farine produite</p><p class="text-lg font-bold text-blue-700">{{ production.quantite_farine_kg|floatformat:0 }} kg</p></div>
+        <div><p class="text-xs text-zinc-400">Pertes</p><p class="text-sm">{{ production.pertes_kg|floatformat:0 }} kg</p></div>
+        <div><p class="text-xs text-zinc-400">Rendement</p>
+          <p class="text-sm font-semibold text-green-700">{% if production.statut == 'TERMINE' %}{{ production.rendement_pct }}%{% else %}—{% endif %}</p>
+        </div>
+        <div class="col-span-2"><p class="text-xs text-zinc-400">Meunier</p><p class="text-sm">{{ production.meunier.get_full_name }}</p></div>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-6 py-4 border-b border-zinc-100"><h2 class="text-sm font-semibold">Sacs produits</h2></div>
+      <table class="w-full">
+        <thead class="bg-zinc-50 border-b"><tr>
+          <th class="table-th">Lot</th><th class="table-th">Type</th><th class="table-th">Sacs</th><th class="table-th">Poids</th><th class="table-th">Date</th>
+        </tr></thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for pf in produits %}
+          <tr>
+            <td class="table-td font-mono text-xs">{{ pf.reference_lot }}</td>
+            <td class="table-td">{{ pf.get_type_sac_display }}</td>
+            <td class="table-td font-semibold">{{ pf.nombre_sacs }}</td>
+            <td class="table-td">{{ pf.poids_total_kg|floatformat:0 }} kg</td>
+            <td class="table-td text-zinc-400">{{ pf.date_ensachage|date:"d/m/Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="table-td text-zinc-400 italic py-8 text-center">Aucun ensachage enregistré</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="space-y-5">
+    <div class="card p-5">
+      <p class="text-xs text-zinc-400 uppercase font-medium mb-3">Actions</p>
+      <div class="space-y-2">
+        {% if peut_ensacher %}
+        <a href="{% url 'production:ensacher' production.pk %}" class="btn-secondary w-full justify-center text-xs">Enregistrer ensachage</a>
+        {% endif %}
+        {% if peut_terminer %}
+        <a href="{% url 'production:terminer' production.pk %}" class="btn-primary w-full justify-center text-xs">Clôturer la mouture</a>
+        {% endif %}
+        <a href="{% url 'production:stock_farine' %}" class="btn-secondary w-full justify-center text-xs">Voir stock farine</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ reception.numero_bon }} — MNL{% endblock %}
+{% block page_title %}Réception {{ reception.numero_bon }}{% endblock %}
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400">
+  <a href="{% url 'magasin:receptions_list' %}" class="hover:text-zinc-700">Réceptions</a>
+  / {{ reception.numero_bon }}
+</p>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'magasin:reception_pdf' reception.pk %}" class="btn-secondary">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+  </svg>
+  Imprimer le bon PDF
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Infos principales -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Bon de réception -->
+    <div class="card overflow-hidden">
+      <div class="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-zinc-800">Bon de réception</h2>
+        <span class="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">{{ reception.numero_bon }}</span>
+      </div>
+      <div class="px-6 py-5 grid grid-cols-2 gap-x-8 gap-y-4">
+        <div>
+          <p class="text-xs text-zinc-400 mb-0.5">Client</p>
+          <p class="text-sm font-semibold text-zinc-900">{{ reception.contrat.client }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-zinc-400 mb-0.5">Contrat</p>
+          <p class="text-sm font-mono text-zinc-700">{{ reception.contrat.numero_contrat }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-zinc-400 mb-0.5">Date de réception</p>
+          <p class="text-sm text-zinc-700">{{ reception.date_reception|date:"d/m/Y" }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-zinc-400 mb-0.5">Magasinier</p>
+          <p class="text-sm text-zinc-700">{{ reception.magasinier.get_full_name }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-zinc-400 mb-0.5">Poids brut</p>
+          <p class="text-sm text-zinc-700">{{ reception.poids_brut_kg|floatformat:1 }} kg</p>
+        </div>
+        <div>
+          <p class="text-xs text-zinc-400 mb-0.5">Poids net (stocké)</p>
+          <p class="text-xl font-bold text-zinc-900">{{ reception.poids_net_kg|floatformat:1 }} <span class="text-sm font-normal text-zinc-400">kg</span></p>
+        </div>
+        {% if reception.poids_brut_kg != reception.poids_net_kg %}
+        <div class="col-span-2">
+          <p class="text-xs text-zinc-400 mb-0.5">Perte / Déchet</p>
+          <p class="text-sm text-orange-600 font-medium">
+            {{ reception.poids_brut_kg|floatformat:1 }} − {{ reception.poids_net_kg|floatformat:1 }} kg
+            = pertes emballage/impuretés
+          </p>
+        </div>
+        {% endif %}
+        {% if reception.observations %}
+        <div class="col-span-2">
+          <p class="text-xs text-zinc-400 mb-0.5">Observations</p>
+          <p class="text-sm text-zinc-600 italic">{{ reception.observations }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Mouvements stock -->
+    <div class="card overflow-hidden">
+      <div class="px-6 py-4 border-b border-zinc-100">
+        <h2 class="text-sm font-semibold text-zinc-800">Entrées stock matière première</h2>
+      </div>
+      <table class="w-full">
+        <thead class="bg-zinc-50 border-b border-zinc-200">
+          <tr>
+            <th class="table-th">Quantité ajoutée</th>
+            <th class="table-th">Date MAJ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for s in reception.mouvements_stock.all %}
+          <tr>
+            <td class="table-td font-semibold text-green-700">+{{ s.quantite_disponible_kg|floatformat:1 }} kg</td>
+            <td class="table-td text-zinc-400">{{ s.date_maj|date:"d/m/Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" class="table-td text-zinc-400 italic">Aucun mouvement</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Panneau latéral -->
+  <div class="space-y-5">
+
+    <!-- Statut contrat -->
+    <div class="card p-5">
+      <p class="text-xs text-zinc-400 mb-3 uppercase tracking-wide font-medium">Statut du contrat</p>
+      <span class="inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-lg
+        {% if reception.contrat.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+        {% elif reception.contrat.statut == 'TERMINE' %}bg-green-50 text-green-700
+        {% else %}bg-zinc-100 text-zinc-600{% endif %}">
+        <span class="w-2 h-2 rounded-full
+          {% if reception.contrat.statut == 'EN_COURS' %}bg-blue-500
+          {% elif reception.contrat.statut == 'TERMINE' %}bg-green-500
+          {% else %}bg-zinc-400{% endif %}"></span>
+        {{ reception.contrat.get_statut_display }}
+      </span>
+      <p class="text-xs text-zinc-400 mt-3">Quantité contractuelle : <strong>{{ reception.contrat.quantite_kg|floatformat:0 }} kg</strong></p>
+    </div>
+
+    <!-- Échantillon -->
+    <div class="card p-5">
+      <p class="text-xs text-zinc-400 mb-3 uppercase tracking-wide font-medium">Analyse laboratoire</p>
+
+      {% if echantillon %}
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-zinc-500">N° échantillon</span>
+          <span class="font-mono text-xs font-semibold text-zinc-800">{{ echantillon.numero_echantillon }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-zinc-500">Statut</span>
+          <span class="text-xs font-medium
+            {% if echantillon.statut == 'TESTE' %}text-green-700
+            {% elif echantillon.statut == 'EN_COURS' %}text-blue-700
+            {% else %}text-yellow-700{% endif %}">
+            {{ echantillon.get_statut_display }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-zinc-500">Envoi labo</span>
+          <span class="text-xs text-zinc-700">{{ echantillon.date_envoi_labo|date:"d/m/Y" }}</span>
+        </div>
+        {% if echantillon.statut == 'TESTE' and echantillon.resultat %}
+        <div class="mt-3 p-3 rounded-lg {% if echantillon.resultat.conforme %}bg-green-50 border border-green-200{% else %}bg-red-50 border border-red-200{% endif %}">
+          <p class="text-xs font-semibold {% if echantillon.resultat.conforme %}text-green-700{% else %}text-red-700{% endif %}">
+            {% if echantillon.resultat.conforme %}✓ Maïs conforme{% else %}✗ Maïs NON conforme{% endif %}
+          </p>
+          <p class="text-xs text-zinc-500 mt-1">
+            Humidité {{ echantillon.resultat.taux_humidite }}% ·
+            Acidité {{ echantillon.resultat.taux_acidite }} ·
+            M.G. {{ echantillon.resultat.taux_matiere_grasse }}%
+          </p>
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <p class="text-sm text-zinc-400 mb-4">Aucun échantillon envoyé.</p>
+      {% if user.role in 'ADMIN,MAGASINIER' %}
+      <a href="{% url 'laboratoire:echantillon_create' %}"
+        class="btn-primary w-full justify-center text-xs">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+        Envoyer un échantillon au labo
+      </a>
+      {% endif %}
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

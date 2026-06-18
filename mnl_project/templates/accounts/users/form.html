@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Modifier{% else %}Nouvel{% endif %} utilisateur — MNL{% endblock %}
+{% block page_title %}{% if object %}Modifier l'utilisateur{% else %}Nouvel utilisateur{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400">
+  <a href="{% url 'accounts:users_list' %}" class="hover:text-zinc-700">Utilisateurs</a>
+  &nbsp;/&nbsp; {% if object %}{{ object.get_full_name }}{% else %}Nouveau{% endif %}
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Informations du compte</h2>
+      <p class="text-xs text-zinc-400 mt-0.5">
+        {% if object %}Modifier les informations de l'utilisateur{% else %}Créer un nouveau compte utilisateur{% endif %}
+      </p>
+    </div>
+
+    <form method="post" class="px-6 py-6 space-y-5">
+      {% csrf_token %}
+
+      <!-- Erreurs globales -->
+      {% if form.non_field_errors %}
+      <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+        {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-700">{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Prénom + Nom -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label" for="{{ form.prenom.id_for_label }}">Prénom <span class="text-red-500">*</span></label>
+          <input type="text" name="prenom" id="{{ form.prenom.id_for_label }}"
+            value="{{ form.prenom.value|default:'' }}"
+            class="form-input {% if form.prenom.errors %}border-red-400 focus:ring-red-400{% endif %}"
+            placeholder="Jean" autocomplete="given-name">
+          {% if form.prenom.errors %}<p class="form-error">{{ form.prenom.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="form-label" for="{{ form.nom.id_for_label }}">Nom <span class="text-red-500">*</span></label>
+          <input type="text" name="nom" id="{{ form.nom.id_for_label }}"
+            value="{{ form.nom.value|default:'' }}"
+            class="form-input {% if form.nom.errors %}border-red-400 focus:ring-red-400{% endif %}"
+            placeholder="Kabila" autocomplete="family-name">
+          {% if form.nom.errors %}<p class="form-error">{{ form.nom.errors|join:", " }}</p>{% endif %}
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label class="form-label" for="{{ form.email.id_for_label }}">Adresse e-mail <span class="text-red-500">*</span></label>
+        <input type="email" name="email" id="{{ form.email.id_for_label }}"
+          value="{{ form.email.value|default:'' }}"
+          class="form-input {% if form.email.errors %}border-red-400 focus:ring-red-400{% endif %}"
+          placeholder="jean.kabila@mnl.cd" autocomplete="email">
+        {% if form.email.errors %}<p class="form-error">{{ form.email.errors|join:", " }}</p>{% endif %}
+      </div>
+
+      <!-- Téléphone + Rôle -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label" for="{{ form.telephone.id_for_label }}">Téléphone</label>
+          <input type="tel" name="telephone" id="{{ form.telephone.id_for_label }}"
+            value="{{ form.telephone.value|default:'' }}"
+            class="form-input"
+            placeholder="+243 81 234 5678">
+        </div>
+        <div>
+          <label class="form-label" for="{{ form.role.id_for_label }}">Rôle <span class="text-red-500">*</span></label>
+          <select name="role" id="{{ form.role.id_for_label }}"
+            class="form-input {% if form.role.errors %}border-red-400{% endif %}">
+            <option value="">— Choisir un rôle —</option>
+            {% for val, label in form.fields.role.choices %}
+            {% if val %}
+            <option value="{{ val }}" {% if form.role.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+          {% if form.role.errors %}<p class="form-error">{{ form.role.errors|join:", " }}</p>{% endif %}
+        </div>
+      </div>
+
+      {% if not object %}
+      <!-- Mot de passe (création seulement) -->
+      <div class="p-4 bg-zinc-50 rounded-lg border border-zinc-200 space-y-4">
+        <p class="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Mot de passe initial</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label" for="{{ form.password1.id_for_label }}">Mot de passe <span class="text-red-500">*</span></label>
+            <input type="password" name="password1" id="{{ form.password1.id_for_label }}"
+              class="form-input {% if form.password1.errors %}border-red-400{% endif %}"
+              placeholder="••••••••">
+            {% if form.password1.errors %}<p class="form-error">{{ form.password1.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="form-label" for="{{ form.password2.id_for_label }}">Confirmer <span class="text-red-500">*</span></label>
+            <input type="password" name="password2" id="{{ form.password2.id_for_label }}"
+              class="form-input {% if form.password2.errors %}border-red-400{% endif %}"
+              placeholder="••••••••">
+            {% if form.password2.errors %}<p class="form-error">{{ form.password2.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+        <p class="text-xs text-zinc-400">8 caractères minimum. L'utilisateur pourra le modifier après connexion.</p>
+      </div>
+      {% endif %}
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-2 border-t border-zinc-100">
+        <a href="{% url 'accounts:users_list' %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          {% if object %}Enregistrer les modifications{% else %}Créer l'utilisateur{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Échantillons — MNL{% endblock %}
+{% block page_title %}Échantillons laboratoire{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Laboratoire · Échantillons</p>{% endblock %}
+
+{% block topbar_actions %}
+{% if user.role in 'ADMIN,MAGASINIER' %}
+<a href="{% url 'laboratoire:echantillon_create' %}" class="btn-primary">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+  Nouvel échantillon
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Compteurs par statut -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+  {% for val, label in statuts %}
+  <a href="?statut={{ val }}" class="card px-5 py-4 hover:shadow-md transition-shadow
+    {% if request.GET.statut == val %}ring-2 ring-blue-500{% endif %}">
+    <p class="text-xs text-zinc-400 mb-1">{{ label }}</p>
+    <p class="text-2xl font-bold
+      {% if val == 'EN_ATTENTE' %}text-yellow-600
+      {% elif val == 'EN_COURS' %}text-blue-600
+      {% else %}text-green-600{% endif %}">
+      {{ page_obj.paginator.object_list|length }}
+    </p>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card overflow-hidden">
+  <div class="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
+    <div class="flex gap-2">
+      <a href="{% url 'laboratoire:echantillons_list' %}"
+        class="px-3 py-1.5 text-xs rounded-lg border transition-colors {% if not request.GET.statut %}border-blue-500 bg-blue-50 text-blue-700{% else %}border-zinc-300 text-zinc-600 hover:bg-zinc-50{% endif %}">
+        Tous
+      </a>
+      {% for val, label in statuts %}
+      <a href="?statut={{ val }}"
+        class="px-3 py-1.5 text-xs rounded-lg border transition-colors {% if request.GET.statut == val %}border-blue-500 bg-blue-50 text-blue-700{% else %}border-zinc-300 text-zinc-600 hover:bg-zinc-50{% endif %}">
+        {{ label|truncatewords:2 }}
+      </a>
+      {% endfor %}
+    </div>
+    <span class="text-xs text-zinc-400">{{ page_obj.paginator.count }} échantillon{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-zinc-50 border-b border-zinc-200">
+        <tr>
+          <th class="table-th">N° Échantillon</th>
+          <th class="table-th">Réception / Client</th>
+          <th class="table-th">Meunier assigné</th>
+          <th class="table-th">Date envoi labo</th>
+          <th class="table-th">Statut</th>
+          <th class="table-th">Résultat</th>
+          <th class="table-th text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-100">
+        {% for e in page_obj %}
+        <tr class="hover:bg-zinc-50 transition-colors">
+          <td class="table-td">
+            <span class="font-mono text-xs font-semibold text-zinc-800 bg-purple-50 text-purple-700 px-2 py-0.5 rounded">{{ e.numero_echantillon }}</span>
+          </td>
+          <td class="table-td">
+            <p class="font-medium text-zinc-900">{{ e.reception.contrat.client }}</p>
+            <p class="text-xs text-zinc-400 font-mono">{{ e.reception.numero_bon }}</p>
+          </td>
+          <td class="table-td text-zinc-600">{{ e.meunier.get_full_name }}</td>
+          <td class="table-td text-zinc-500">{{ e.date_envoi_labo|date:"d/m/Y" }}</td>
+          <td class="table-td">
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full
+              {% if e.statut == 'TESTE' %}bg-green-50 text-green-700
+              {% elif e.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+              {% else %}bg-yellow-50 text-yellow-700{% endif %}">
+              <span class="w-1.5 h-1.5 rounded-full
+                {% if e.statut == 'TESTE' %}bg-green-500
+                {% elif e.statut == 'EN_COURS' %}bg-blue-500
+                {% else %}bg-yellow-500{% endif %}"></span>
+              {{ e.get_statut_display|truncatewords:2 }}
+            </span>
+          </td>
+          <td class="table-td">
+            {% if e.statut == 'TESTE' and e.resultat %}
+              {% if e.resultat.conforme %}
+              <span class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Conforme
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                Non conforme
+              </span>
+              {% endif %}
+            {% elif e.statut != 'TESTE' and user.role in 'ADMIN,LABORANTIN' %}
+              <a href="{% url 'laboratoire:resultat_create' %}" class="text-xs text-blue-600 hover:underline">Encoder →</a>
+            {% else %}
+              <span class="text-xs text-zinc-400">—</span>
+            {% endif %}
+          </td>
+          <td class="table-td text-right text-xs text-zinc-400">
+            {{ e.date_creation|date:"d/m/Y" }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="py-16 text-center">
+            <svg class="w-10 h-10 text-zinc-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+            </svg>
+            <p class="text-sm text-zinc-400">Aucun échantillon trouvé</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

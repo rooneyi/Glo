@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouveau bon de retrait — MNL{% endblock %}
+{% block page_title %}Générer un bon de retrait{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400"><a href="{% url 'facturation:bons_list' %}">Bons</a> / Nouveau</p>{% endblock %}
+
+{% block content %}
+<div class="max-w-xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold">Bon de retrait</h2>
+      <p class="text-xs text-zinc-400 mt-1">Production terminée et paiement validé requis.</p>
+    </div>
+    <form method="post" class="px-6 py-6 space-y-5">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+      <div>
+        <label class="form-label">Contrat *</label>
+        <select name="contrat" class="form-input" required>
+          <option value="">— Choisir —</option>
+          {% for c in form.fields.contrat.queryset %}
+          <option value="{{ c.pk }}" {% if form.contrat.value|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>
+            {{ c.numero_contrat }} — {{ c.client }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Date de retrait *</label>
+        <input type="date" name="date_retrait" value="{{ form.date_retrait.value|default:'' }}" class="form-input" required>
+      </div>
+      <div>
+        <label class="form-label">Quantité (sacs) *</label>
+        <input type="number" name="quantite_sacs" value="{{ form.quantite_sacs.value|default:'' }}" class="form-input" min="1" required>
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="checkbox" name="facture_reglee" id="facture_reglee" class="rounded border-zinc-300" {% if form.facture_reglee.value %}checked{% endif %}>
+        <label for="facture_reglee" class="text-sm text-zinc-700">Facture réglée par le client</label>
+      </div>
+      <div class="flex justify-between pt-2 border-t">
+        <a href="{% url 'facturation:bons_list' %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-primary">Générer le bon</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

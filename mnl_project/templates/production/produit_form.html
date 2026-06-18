@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Ensacher — MNL{% endblock %}
+{% block page_title %}Ensacher — {{ production.numero_production }}{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400"><a href="{% url 'production:detail' production.pk %}">{{ production.numero_production }}</a> / Ensachage</p>{% endblock %}
+
+{% block content %}
+<div class="max-w-xl">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold">Enregistrer l'ensachage</h2>
+    </div>
+    <form method="post" class="px-6 py-6 space-y-5">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+      <div>
+        <label class="form-label">Type de sac *</label>
+        <select name="type_sac" class="form-input">
+          <option value="25KG" {% if form.type_sac.value == '25KG' %}selected{% endif %}>Sac 25 kg</option>
+          <option value="50KG" {% if form.type_sac.value == '50KG' %}selected{% endif %}>Sac 50 kg</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Nombre de sacs *</label>
+        <input type="number" name="nombre_sacs" value="{{ form.nombre_sacs.value|default:'' }}" class="form-input" min="1">
+      </div>
+      <div>
+        <label class="form-label">Poids total (kg) *</label>
+        <input type="number" step="0.1" name="poids_total_kg" value="{{ form.poids_total_kg.value|default:'' }}" class="form-input">
+        <p class="text-xs text-zinc-400 mt-1">ex. 10 sacs × 25 kg = 250 kg</p>
+      </div>
+      <div class="flex justify-between pt-2 border-t">
+        <a href="{% url 'production:detail' production.pk %}" class="btn-secondary">Annuler</a>
+        <button type="submit" class="btn-primary">Enregistrer au stock</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

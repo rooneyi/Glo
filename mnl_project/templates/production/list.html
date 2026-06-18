@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Productions — MNL{% endblock %}
+{% block page_title %}Productions / Moutures{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Production · Moutures</p>{% endblock %}
+
+{% block topbar_actions %}
+{% if user.role in 'ADMIN,MEUNIER' %}
+<a href="{% url 'production:create' %}" class="btn-primary">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+  Lancer une mouture
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card overflow-hidden">
+  <div class="px-5 py-4 border-b border-zinc-100 flex flex-wrap items-center gap-3">
+    <form method="get" class="flex gap-3 flex-1 flex-wrap">
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="N° production, client…"
+        class="w-56 px-3 py-2 text-sm border border-zinc-300 rounded-lg bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+      <select name="statut" class="px-3 py-2 text-sm border border-zinc-300 rounded-lg bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">Tous les statuts</option>
+        {% for val, label in statuts %}
+        <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrer</button>
+    </form>
+    <span class="text-xs text-zinc-400">{{ page_obj.paginator.count }} production{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-zinc-50 border-b border-zinc-200">
+        <tr>
+          <th class="table-th">N° Production</th>
+          <th class="table-th">Client</th>
+          <th class="table-th">Qté traitée</th>
+          <th class="table-th">Farine</th>
+          <th class="table-th">Rendement</th>
+          <th class="table-th">Statut</th>
+          <th class="table-th">Meunier</th>
+          <th class="table-th text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-100">
+        {% for p in page_obj %}
+        <tr class="hover:bg-zinc-50">
+          <td class="table-td"><span class="font-mono text-xs font-semibold bg-zinc-100 px-2 py-0.5 rounded">{{ p.numero_production }}</span></td>
+          <td class="table-td font-medium">{{ p.contrat.client }}</td>
+          <td class="table-td">{{ p.quantite_traitee_kg|floatformat:0 }} kg</td>
+          <td class="table-td">{{ p.quantite_farine_kg|floatformat:0 }} kg</td>
+          <td class="table-td">
+            {% if p.statut == 'TERMINE' %}
+            <span class="text-green-700 font-semibold">{{ p.rendement_pct }}%</span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="table-td">
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full
+              {% if p.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+              {% elif p.statut == 'TERMINE' %}bg-green-50 text-green-700
+              {% else %}bg-zinc-100 text-zinc-600{% endif %}">
+              {{ p.get_statut_display }}
+            </span>
+          </td>
+          <td class="table-td text-xs text-zinc-500">{{ p.meunier.get_full_name }}</td>
+          <td class="table-td text-right">
+            <a href="{% url 'production:detail' p.pk %}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">Détail →</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="py-16 text-center text-sm text-zinc-400">Aucune production</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-4 border-t border-zinc-100 flex justify-between">
+    <p class="text-xs text-zinc-400">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 text-xs border rounded-md">← Précédent</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 text-xs border rounded-md">Suivant →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

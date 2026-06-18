@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock farine — MNL{% endblock %}
+{% block page_title %}Stock farine{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Production · Stock farine</p>{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-2 gap-4 mb-6 max-w-md">
+  <div class="card px-5 py-4">
+    <p class="text-xs text-zinc-400">Total sacs</p>
+    <p class="text-2xl font-bold text-zinc-900">{{ total_sacs }}</p>
+  </div>
+  <div class="card px-5 py-4">
+    <p class="text-xs text-zinc-400">Total kg</p>
+    <p class="text-2xl font-bold text-blue-700">{{ total_kg }} <span class="text-sm font-normal text-zinc-400">kg</span></p>
+  </div>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-zinc-50 border-b">
+        <tr>
+          <th class="table-th">Type</th>
+          <th class="table-th">Sacs</th>
+          <th class="table-th">Kg</th>
+          <th class="table-th">Lot</th>
+          <th class="table-th">Production</th>
+          <th class="table-th">Client</th>
+          <th class="table-th">MAJ</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-100">
+        {% for s in page_obj %}
+        <tr class="hover:bg-zinc-50">
+          <td class="table-td">{{ s.type_farine }}</td>
+          <td class="table-td font-semibold">{{ s.quantite_sacs }}</td>
+          <td class="table-td">{{ s.quantite_kg|floatformat:0 }} kg</td>
+          <td class="table-td font-mono text-xs">{{ s.produit_fini.reference_lot }}</td>
+          <td class="table-td font-mono text-xs">{{ s.produit_fini.production.numero_production }}</td>
+          <td class="table-td">{{ s.produit_fini.production.contrat.client }}</td>
+          <td class="table-td text-zinc-400 text-xs">{{ s.date_maj|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="py-12 text-center text-zinc-400">Stock vide</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Contrats — MNL{% endblock %}
+{% block page_title %}Contrats de mouture{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Gestion · Contrats</p>{% endblock %}
+
+{% block topbar_actions %}
+{% if user.role in 'ADMIN,COMPTABLE' %}
+<a href="{% url 'contrats:create' %}" class="btn-primary">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+  Nouveau contrat
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Compteurs statuts -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+  {% for val, label in statuts %}
+  <div class="card px-4 py-3 flex items-center gap-3">
+    <div class="w-2 h-8 rounded-full
+      {% if val == 'EN_ATTENTE' %}bg-yellow-400
+      {% elif val == 'EN_COURS' %}bg-blue-500
+      {% elif val == 'TERMINE' %}bg-green-500
+      {% else %}bg-red-400{% endif %}"></div>
+    <div>
+      <p class="text-xs text-zinc-400">{{ label }}</p>
+      <p class="text-lg font-bold text-zinc-900">{{ page_obj.paginator.object_list|length }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card overflow-hidden">
+  <div class="px-5 py-4 border-b border-zinc-100 flex flex-wrap items-center gap-3">
+    <form method="get" class="flex gap-3 flex-1 flex-wrap">
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="N° contrat, client…"
+        class="w-56 px-3 py-2 text-sm border border-zinc-300 rounded-lg bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors placeholder-zinc-400">
+      <select name="statut" class="px-3 py-2 text-sm border border-zinc-300 rounded-lg bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+        <option value="">Tous les statuts</option>
+        {% for val, label in statuts %}
+        <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrer</button>
+    </form>
+    <span class="text-xs text-zinc-400">{{ page_obj.paginator.count }} contrat{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-zinc-50 border-b border-zinc-200">
+        <tr>
+          <th class="table-th">N° Contrat</th>
+          <th class="table-th">Client</th>
+          <th class="table-th">Qté maïs</th>
+          <th class="table-th">Statut</th>
+          <th class="table-th">Date</th>
+          <th class="table-th">Comptable</th>
+          <th class="table-th text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-100">
+        {% for c in page_obj %}
+        <tr class="hover:bg-zinc-50 transition-colors">
+          <td class="table-td">
+            <span class="font-mono text-xs font-semibold text-zinc-800 bg-zinc-100 px-2 py-0.5 rounded">{{ c.numero_contrat }}</span>
+          </td>
+          <td class="table-td">
+            <p class="font-medium text-zinc-900">{{ c.client }}</p>
+          </td>
+          <td class="table-td text-zinc-700 font-medium">{{ c.quantite_kg|floatformat:0 }} <span class="text-zinc-400 font-normal">kg</span></td>
+          <td class="table-td">
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full
+              {% if c.statut == 'EN_ATTENTE' %}bg-yellow-50 text-yellow-700
+              {% elif c.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+              {% elif c.statut == 'TERMINE' %}bg-green-50 text-green-700
+              {% else %}bg-red-50 text-red-600{% endif %}">
+              <span class="w-1.5 h-1.5 rounded-full
+                {% if c.statut == 'EN_ATTENTE' %}bg-yellow-500
+                {% elif c.statut == 'EN_COURS' %}bg-blue-500
+                {% elif c.statut == 'TERMINE' %}bg-green-500
+                {% else %}bg-red-400{% endif %}"></span>
+              {{ c.get_statut_display }}
+            </span>
+          </td>
+          <td class="table-td text-zinc-400">{{ c.date_contrat|date:"d/m/Y" }}</td>
+          <td class="table-td text-zinc-500 text-xs">{{ c.comptable.get_full_name }}</td>
+          <td class="table-td text-right">
+            {% if user.role in 'ADMIN,COMPTABLE' %}
+            <a href="{% url 'contrats:edit' c.pk %}" class="p-1.5 rounded-md text-zinc-400 hover:text-blue-600 hover:bg-blue-50 transition-colors inline-block">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="py-16 text-center text-sm text-zinc-400">Aucun contrat trouvé</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-4 border-t border-zinc-100 flex items-center justify-between">
+    <p class="text-xs text-zinc-400">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 text-xs border border-zinc-300 rounded-md text-zinc-600 hover:bg-zinc-50">← Précédent</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 text-xs border border-zinc-300 rounded-md text-zinc-600 hover:bg-zinc-50">Suivant →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
