@@ -9,7 +9,17 @@
 {% endblock %}
 
 {% block content %}
-<div id="dashboard-root" class="min-h-[480px]"></div>
+<div id="dashboard-root" class="min-h-[480px]">
+  <div class="animate-pulse space-y-6" id="dashboard-skeleton">
+    <div class="h-8 w-48 rounded-lg bg-zinc-200"></div>
+    <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      {% for i in "1234" %}
+      <div class="h-28 rounded-xl bg-zinc-200"></div>
+      {% endfor %}
+    </div>
+    <div class="h-72 rounded-xl bg-zinc-200"></div>
+  </div>
+</div>
 {{ dashboard_payload|json_script:"dashboard-data" }}
 <script type="module" src="{% static 'dashboard/dashboard.js' %}"></script>
 {% endblock %}

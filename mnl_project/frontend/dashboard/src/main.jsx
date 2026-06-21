@@ -9,7 +9,10 @@ if (el && dataEl) {
   const payload = JSON.parse(dataEl.textContent);
   createRoot(el).render(
     <React.StrictMode>
-      <Dashboard data={payload} />
+      <div data-dashboard-mounted="">
+        <Dashboard data={payload} />
+      </div>
     </React.StrictMode>,
   );
+  document.getElementById('dashboard-skeleton')?.remove();
 }
