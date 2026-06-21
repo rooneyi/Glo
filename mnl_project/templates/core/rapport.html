@@ -3,32 +3,279 @@
 {% block title %}Rapport quantités — MNL{% endblock %}
 {% block page_title %}Rapport des quantités{% endblock %}
 {% block breadcrumb %}
-<p class="text-xs text-zinc-400">Reçues · produites · ensachées · livrées · stockées</p>
+<p class="text-xs text-zinc-400">{{ periode_label }} · Reçues · produites · ensachées · livrées · stockées</p>
+{% endblock %}
+
+{% block topbar_actions %}
+<button type="button" onclick="window.print()" class="btn-secondary text-xs">Imprimer</button>
 {% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+
+<form method="get" class="card p-4 mb-6 flex flex-wrap items-end gap-4 print:hidden">
+  <div>
+    <label class="block text-xs text-zinc-500 mb-1">Date début</label>
+    <input type="date" name="debut" value="{{ debut }}" class="input-field text-sm">
+  </div>
+  <div>
+    <label class="block text-xs text-zinc-500 mb-1">Date fin</label>
+    <input type="date" name="fin" value="{{ fin }}" class="input-field text-sm">
+  </div>
+  <button type="submit" class="btn-primary text-sm">Filtrer</button>
+  {% if debut or fin %}
+  <a href="{% url 'core:rapport' %}" class="text-sm text-zinc-500 hover:text-zinc-800">Réinitialiser</a>
+  {% endif %}
+</form>
+
+<!-- Synthèse KPI -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
   <div class="card p-5 border-l-4 border-l-green-500">
     <p class="text-xs font-semibold text-zinc-500 uppercase">Reçues</p>
     <p class="text-2xl font-bold mt-2">{{ rapport.recu_kg }} <span class="text-sm font-normal text-zinc-400">kg maïs</span></p>
+    <p class="text-xs text-zinc-400 mt-1">{{ rapport.recu_nb }} réception{{ rapport.recu_nb|pluralize }}</p>
   </div>
   <div class="card p-5 border-l-4 border-l-blue-500">
     <p class="text-xs font-semibold text-zinc-500 uppercase">Produites</p>
     <p class="text-2xl font-bold mt-2">{{ rapport.produit_kg }} <span class="text-sm font-normal text-zinc-400">kg farine</span></p>
+    <p class="text-xs text-zinc-400 mt-1">
+      {{ rapport.produit_nb }} mouture{{ rapport.produit_nb|pluralize }}
+      {% if rapport.rendement_pct %} · rendement {{ rapport.rendement_pct }}%{% endif %}
+    </p>
+    <p class="text-xs text-zinc-500 mt-0.5">{{ rapport.traite_kg }} kg maïs traités</p>
   </div>
   <div class="card p-5 border-l-4 border-l-orange-500">
     <p class="text-xs font-semibold text-zinc-500 uppercase">Ensachées</p>
     <p class="text-2xl font-bold mt-2">{{ rapport.ensache_sacs }} <span class="text-sm font-normal text-zinc-400">sacs</span></p>
-    <p class="text-xs text-zinc-400 mt-1">{{ rapport.ensache_kg }} kg</p>
+    <p class="text-xs text-zinc-400 mt-1">{{ rapport.ensache_kg }} kg · {{ rapport.ensache_nb }} lot{{ rapport.ensache_nb|pluralize }}</p>
   </div>
   <div class="card p-5 border-l-4 border-l-violet-500">
     <p class="text-xs font-semibold text-zinc-500 uppercase">Livrées</p>
     <p class="text-2xl font-bold mt-2">{{ rapport.livre_sacs }} <span class="text-sm font-normal text-zinc-400">sacs retirés</span></p>
+    <p class="text-xs text-zinc-400 mt-1">≈ {{ rapport.livre_kg }} kg · {{ rapport.livre_nb }} bon{{ rapport.livre_nb|pluralize }}</p>
   </div>
   <div class="card p-5 border-l-4 border-l-teal-500">
-    <p class="text-xs font-semibold text-zinc-500 uppercase">Stockées</p>
+    <p class="text-xs font-semibold text-zinc-500 uppercase">Stockées (farine)</p>
     <p class="text-2xl font-bold mt-2">{{ rapport.stocke_sacs }} <span class="text-sm font-normal text-zinc-400">sacs</span></p>
-    <p class="text-xs text-zinc-400 mt-1">{{ rapport.stocke_kg }} kg en stock</p>
+    <p class="text-xs text-zinc-400 mt-1">{{ rapport.stocke_kg }} kg en stock actuel</p>
+  </div>
+  <div class="card p-5 border-l-4 border-l-amber-500">
+    <p class="text-xs font-semibold text-zinc-500 uppercase">Stock maïs (MP)</p>
+    <p class="text-2xl font-bold mt-2">{{ rapport.stock_mp_kg }} <span class="text-sm font-normal text-zinc-400">kg</span></p>
+    <p class="text-xs text-zinc-400 mt-1">Matière première disponible</p>
   </div>
 </div>
+
+<!-- Flux -->
+<div class="card p-5 mb-8">
+  <h2 class="text-sm font-semibold text-zinc-800 mb-4">Flux de la chaîne</h2>
+  <div class="flex flex-wrap items-center gap-2 text-xs">
+    <span class="px-3 py-2 rounded-lg bg-green-50 text-green-800 font-medium">{{ rapport.recu_kg }} kg reçus</span>
+    <span class="text-zinc-300">→</span>
+    <span class="px-3 py-2 rounded-lg bg-blue-50 text-blue-800 font-medium">{{ rapport.produit_kg }} kg produits</span>
+    <span class="text-zinc-300">→</span>
+    <span class="px-3 py-2 rounded-lg bg-orange-50 text-orange-800 font-medium">{{ rapport.ensache_sacs }} sacs ensachés</span>
+    <span class="text-zinc-300">→</span>
+    <span class="px-3 py-2 rounded-lg bg-violet-50 text-violet-800 font-medium">{{ rapport.livre_sacs }} sacs livrés</span>
+    <span class="text-zinc-300">→</span>
+    <span class="px-3 py-2 rounded-lg bg-teal-50 text-teal-800 font-medium">{{ rapport.stocke_sacs }} sacs stockés</span>
+  </div>
+  {% if rapport.ensache_sacs and rapport.livre_sacs %}
+  <p class="text-xs text-zinc-400 mt-3">
+    Taux de livraison : {% widthratio rapport.livre_sacs rapport.ensache_sacs 100 %}% des sacs ensachés retirés par les clients
+  </p>
+  {% endif %}
+</div>
+
+<!-- Tableaux détail -->
+<div class="space-y-6">
+
+  <section class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Réceptions de maïs</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Date</th>
+            <th class="table-th">Bon</th>
+            <th class="table-th">Client</th>
+            <th class="table-th text-right">Kg net</th>
+            <th class="table-th">Magasinier</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for r in receptions %}
+          <tr class="hover:bg-zinc-50">
+            <td class="table-td">{{ r.date_reception|date:"d/m/Y" }}</td>
+            <td class="table-td font-mono text-xs">{{ r.numero_bon }}</td>
+            <td class="table-td">{{ r.contrat.client }}</td>
+            <td class="table-td text-right font-semibold">{{ r.poids_net_kg|floatformat:0 }}</td>
+            <td class="table-td text-zinc-500">{{ r.magasinier.get_full_name }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="py-8 text-center text-zinc-400">Aucune réception sur la période</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Productions (moutures terminées)</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Fin</th>
+            <th class="table-th">N° production</th>
+            <th class="table-th">Client</th>
+            <th class="table-th text-right">Maïs traité</th>
+            <th class="table-th text-right">Farine</th>
+            <th class="table-th text-right">Rendement</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for p in productions %}
+          <tr class="hover:bg-zinc-50">
+            <td class="table-td">{{ p.date_fin|date:"d/m/Y" }}</td>
+            <td class="table-td font-mono text-xs">{{ p.numero_production }}</td>
+            <td class="table-td">{{ p.contrat.client }}</td>
+            <td class="table-td text-right">{{ p.quantite_traitee_kg|floatformat:0 }} kg</td>
+            <td class="table-td text-right font-semibold text-blue-700">{{ p.quantite_farine_kg|floatformat:0 }} kg</td>
+            <td class="table-td text-right text-green-700">{{ p.rendement_pct }}%</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="py-8 text-center text-zinc-400">Aucune production sur la période</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Ensachages</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Date</th>
+            <th class="table-th">Lot</th>
+            <th class="table-th">Client</th>
+            <th class="table-th">Type</th>
+            <th class="table-th text-right">Sacs</th>
+            <th class="table-th text-right">Kg</th>
+            <th class="table-th">Statut</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for e in ensachages %}
+          <tr class="hover:bg-zinc-50">
+            <td class="table-td">{{ e.date_ensachage|date:"d/m/Y" }}</td>
+            <td class="table-td font-mono text-xs">
+              <a href="{% url 'production:historique_lot' e.pk %}" class="text-blue-600 hover:underline">{{ e.reference_lot }}</a>
+            </td>
+            <td class="table-td">{{ e.production.contrat.client }}</td>
+            <td class="table-td">{{ e.get_type_sac_display }}</td>
+            <td class="table-td text-right font-semibold">{{ e.nombre_sacs }}</td>
+            <td class="table-td text-right">{{ e.poids_total_kg|floatformat:0 }}</td>
+            <td class="table-td">
+              <span class="text-xs px-2 py-0.5 rounded-full {% if e.statut_lot == 'VALIDE' %}bg-green-50 text-green-700{% else %}bg-zinc-100{% endif %}">
+                {{ e.get_statut_lot_display }}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="py-8 text-center text-zinc-400">Aucun ensachage sur la période</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-800">Livraisons (bons de retrait)</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Date</th>
+            <th class="table-th">Bon</th>
+            <th class="table-th">Client</th>
+            <th class="table-th">Contrat</th>
+            <th class="table-th text-right">Sacs</th>
+            <th class="table-th">Facture</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for b in livraisons %}
+          <tr class="hover:bg-zinc-50">
+            <td class="table-td">{{ b.date_retrait|date:"d/m/Y" }}</td>
+            <td class="table-td font-mono text-xs">{{ b.numero_bon }}</td>
+            <td class="table-td">{{ b.client }}</td>
+            <td class="table-td font-mono text-xs">{{ b.contrat.numero_contrat }}</td>
+            <td class="table-td text-right font-semibold">{{ b.quantite_sacs }}</td>
+            <td class="table-td">
+              {% if b.facture_reglee %}
+              <span class="text-xs text-green-600">Réglée</span>
+              {% else %}
+              <span class="text-xs text-amber-600">En attente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="py-8 text-center text-zinc-400">Aucune livraison sur la période</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100 flex justify-between items-center">
+      <h2 class="text-sm font-semibold text-zinc-800">Stock farine actuel</h2>
+      <span class="text-xs text-zinc-400">Instantané — non filtré par période</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Lot</th>
+            <th class="table-th">Client</th>
+            <th class="table-th text-right">Sacs</th>
+            <th class="table-th text-right">Kg</th>
+            <th class="table-th">MAJ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for s in stock_actuel %}
+          <tr class="hover:bg-zinc-50">
+            <td class="table-td font-mono text-xs">{{ s.produit_fini.reference_lot }}</td>
+            <td class="table-td">{{ s.produit_fini.production.contrat.client }}</td>
+            <td class="table-td text-right font-semibold">{{ s.quantite_sacs }}</td>
+            <td class="table-td text-right">{{ s.quantite_kg|floatformat:0 }}</td>
+            <td class="table-td text-zinc-400 text-xs">{{ s.date_maj|date:"d/m/Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="py-8 text-center text-zinc-400">Stock farine vide</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<style>
+@media print {
+  .print\:hidden { display: none !important; }
+  aside, header nav { display: none !important; }
+}
+</style>
 {% endblock %}
