@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
@@ -119,18 +120,17 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         ctx['kpi'] = kpi
 
         show_stats = user.role in ('ADMIN', 'COMPTABLE', 'MEUNIER', 'MAGASINIER', 'LABORANTIN')
-        ctx['show_stats_mensuelles'] = show_stats
-        if show_stats:
-            stats = self._stats_dashboard_mensuel()
-            ctx['stats_mensuelles'] = stats
-            ctx['chart_labels'] = json.dumps(stats['labels'])
-            ctx['chart_production_kg'] = json.dumps(stats['production_kg'])
-            ctx['chart_production_nb'] = json.dumps(stats['production_nb'])
-            ctx['chart_lots_valides'] = json.dumps(stats['lots_valides'])
-            ctx['chart_livraisons'] = json.dumps(stats['livraisons_sacs'])
-            ctx['chart_analyses'] = json.dumps(stats['analyses_labo'])
-
-        ctx['activite_recente'] = self._activite_recente(user)
+        stats = self._stats_dashboard_mensuel() if show_stats else None
+        activite = self._activite_recente(user)
+        ctx['dashboard_payload'] = self._build_dashboard_payload(
+            request=self.request,
+            user=user,
+            kpi=kpi,
+            stats=stats,
+            show_stats=show_stats,
+            alertes=list(ctx['alertes_recentes']),
+            activite=activite,
+        )
         return ctx
 
     @staticmethod
@@ -259,23 +259,155 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def _activite_recente(self, user):
         events = []
         if user.role in ('ADMIN', 'COMPTABLE'):
-            for c in ContratMouture.objects.order_by('-date_creation')[:3]:
+            for c in ContratMouture.objects.select_related('client', 'comptable').order_by('-date_creation')[:4]:
                 events.append({
                     'type': 'contrat',
-                    'description': f"Contrat {c.numero_contrat} — {c.client} ({c.get_type_mouture_display()})",
+                    'description': f"Contrat {c.numero_contrat} — {c.client}",
                     'date': c.date_creation,
                     'auteur': str(c.comptable),
                 })
         if user.role in ('ADMIN', 'MAGASINIER'):
-            for r in Reception.objects.order_by('-date_creation')[:3]:
+            for r in Reception.objects.select_related('magasinier').order_by('-date_creation')[:4]:
                 events.append({
                     'type': 'reception',
                     'description': f"Réception {r.numero_bon} — {r.poids_net_kg} kg",
                     'date': r.date_creation,
                     'auteur': str(r.magasinier),
                 })
+        if user.role in ('ADMIN', 'MEUNIER'):
+            for p in Production.objects.select_related('contrat__client').order_by('-date_creation')[:3]:
+                events.append({
+                    'type': 'production',
+                    'description': f"Mouture {p.numero_production} — {p.contrat.client}",
+                    'date': p.date_creation,
+                    'auteur': str(p.meunier),
+                })
+        if user.role in ('ADMIN', 'LABORANTIN'):
+            for e in Echantillon.objects.order_by('-date_creation')[:3]:
+                events.append({
+                    'type': 'labo',
+                    'description': f"Échantillon {e.numero_echantillon} — {e.get_statut_display()}",
+                    'date': e.date_creation,
+                    'auteur': str(e.meunier),
+                })
         events.sort(key=lambda e: e['date'], reverse=True)
         return events[:8]
+
+    def _build_dashboard_payload(self, request, user, kpi, stats, show_stats, alertes, activite):
+        role = user.role
+        alerte_types = {
+            'RESULTAT_LABO': ('text-indigo-600', 'Résultat laboratoire'),
+            'LIVRAISON_PRETE': ('text-green-700', 'Livraison prête'),
+            'RETARD': ('text-red-600', 'Retard'),
+        }
+
+        def fmt_since(dt):
+            delta = timezone.now() - dt
+            sec = int(delta.total_seconds())
+            if sec < 3600:
+                return f'il y a {max(sec // 60, 1)} min'
+            if sec < 86400:
+                return f'il y a {sec // 3600} h'
+            return f'il y a {sec // 86400} j'
+
+        urls = {
+            'alertes': reverse('facturation:alertes'),
+        }
+        if role in ('ADMIN', 'COMPTABLE'):
+            urls['rapport'] = reverse('core:rapport')
+
+        cards = []
+
+        def add_card(cid, label, value, unit='', sub='', accent='blue', link=''):
+            cards.append({
+                'id': cid, 'label': label, 'value': str(value), 'unit': unit,
+                'sub': sub, 'accent': accent, 'link': link,
+            })
+
+        if role in ('ADMIN', 'MAGASINIER'):
+            add_card('stock_mp', 'Stock maïs', kpi.get('stock_mp_kg', 0), 'kg',
+                     'Matière première disponible', 'green')
+        if role in ('ADMIN', 'COMPTABLE'):
+            add_card('contrats', 'Contrats actifs', kpi.get('contrats_en_cours', 0), '',
+                     'En cours de traitement', 'blue')
+        if role in ('ADMIN', 'MEUNIER'):
+            add_card('stock_farine', 'Stock farine', kpi.get('stock_farine_sacs', 0), 'sacs',
+                     f"{kpi.get('stock_farine_kg', 0)} kg disponibles", 'orange')
+        add_card(
+            'alertes', 'Alertes', kpi.get('alertes_non_lues', 0), '',
+            f"Labo {kpi.get('alertes_resultat_labo', 0)} · Livraison {kpi.get('alertes_livraison', 0)} · Retard {kpi.get('alertes_retard', 0)}"
+            if kpi.get('alertes_non_lues') else 'Aucune alerte',
+            'red' if kpi.get('alertes_non_lues') else 'blue',
+            reverse('facturation:alertes') if kpi.get('alertes_non_lues') else '',
+        )
+        if role == 'ADMIN':
+            add_card('rendement', 'Rendement moyen', kpi.get('rendement_moyen', '—'), '%',
+                     'Taux de mouture', 'purple')
+            add_card('receptions', 'Réceptions (mois)', kpi.get('receptions_mois', 0), '',
+                     f"{kpi.get('total_mais_mois', 0)} kg reçus", 'teal')
+        if role in ('ADMIN', 'LABORANTIN', 'MEUNIER'):
+            sub_labo = f"En cours · {kpi.get('resultats_labo', 0)} résultat(s) ce mois"
+            if kpi.get('echantillons_mois'):
+                sub_labo += f" · {kpi.get('echantillons_mois')} envoi(s) · {kpi.get('analyses_conformes_mois', 0)} conforme(s)"
+            add_card('labo', 'Laboratoire', kpi.get('analyses_en_cours', 0), '', sub_labo, 'indigo')
+        if role in ('ADMIN', 'COMPTABLE'):
+            add_card('livraisons', 'Livraisons', kpi.get('livraisons_sacs_mois', 0), 'sacs',
+                     f"{kpi.get('livraisons_mois', 0)} retrait(s) · {kpi.get('livraisons_pretes', 0)} alerte(s)",
+                     'violet')
+        if role in ('ADMIN', 'MEUNIER', 'MAGASINIER', 'COMPTABLE'):
+            add_card('lots', 'Lots validés', kpi.get('lots_valides', 0), '',
+                     f"{kpi.get('lots_en_attente', 0)} en attente · {kpi.get('lots_valides_mois', 0)} ce mois",
+                     'emerald')
+        if role in ('ADMIN', 'MEUNIER'):
+            add_card('prod_mois', 'Production (mois)', kpi.get('production_kg_mois', 0), 'kg',
+                     f"{kpi.get('productions_mois', 0)} mouture(s) terminée(s)", 'sky')
+        if role in ('ADMIN', 'MAGASINIER'):
+            add_card('cession', 'Bons cession', kpi.get('bons_cession_attente', 0), '',
+                     'À recevoir (produits finis)', 'amber')
+
+        actions = []
+        if role in ('ADMIN', 'COMPTABLE'):
+            actions.extend([
+                {'label': 'Nouveau client', 'sub': 'Enregistrer un client', 'href': reverse('clients:create'), 'icon': 'CL'},
+                {'label': 'Nouveau contrat', 'sub': 'Contrat de mouture', 'href': reverse('contrats:create'), 'icon': 'CT'},
+            ])
+        if role in ('ADMIN', 'MAGASINIER'):
+            actions.extend([
+                {'label': 'Réception maïs', 'sub': 'Enregistrer une réception', 'href': reverse('magasin:reception_create'), 'icon': 'RC'},
+                {'label': 'Bons cession PF', 'sub': f"{kpi.get('bons_cession_attente', 0)} en attente", 'href': reverse('magasin:bons_cession_list'), 'icon': 'BC'},
+            ])
+        if role == 'ADMIN':
+            actions.append({'label': 'Nouvel utilisateur', 'sub': 'Créer un compte', 'href': reverse('accounts:user_create'), 'icon': 'US'})
+
+        return {
+            'role': role,
+            'roleDisplay': user.get_role_display(),
+            'showStats': show_stats,
+            'kpiCards': cards,
+            'stats': stats,
+            'urls': urls,
+            'alertes': [
+                {
+                    'id': a.id,
+                    'typeLabel': a.get_type_display(),
+                    'typeClass': alerte_types.get(a.type, ('text-zinc-500', ''))[0],
+                    'message': a.message,
+                    'lu': a.lu,
+                    'since': fmt_since(a.date_creation),
+                }
+                for a in alertes
+            ],
+            'activite': [
+                {
+                    'type': e['type'],
+                    'description': e['description'],
+                    'auteur': e['auteur'],
+                    'since': fmt_since(e['date']),
+                }
+                for e in activite
+            ],
+            'actions': actions,
+        }
 
 
 class RapportQuantitesView(LoginRequiredMixin, View):
