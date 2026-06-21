@@ -109,15 +109,20 @@
   <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-indigo-500 p-5">
     <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Laboratoire</p>
     <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.analyses_en_cours|default:"0" }}</p>
-    <p class="text-xs text-zinc-400 mt-1">Analyses en cours · {{ kpi.resultats_labo|default:"0" }} ce mois</p>
+    <p class="text-xs text-zinc-400 mt-1">
+      En cours · {{ kpi.resultats_labo|default:"0" }} résultat{{ kpi.resultats_labo|pluralize }} ce mois
+    </p>
+    {% if kpi.echantillons_mois %}
+    <p class="text-xs text-zinc-500 mt-0.5">{{ kpi.echantillons_mois }} échantillon{{ kpi.echantillons_mois|pluralize }} envoyé{{ kpi.echantillons_mois|pluralize }} · {{ kpi.analyses_conformes_mois|default:"0" }} conforme{{ kpi.analyses_conformes_mois|pluralize }}</p>
+    {% endif %}
   </div>
   {% endif %}
 
   {% if user.role in 'ADMIN,COMPTABLE' %}
   <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-violet-500 p-5">
     <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Livraisons</p>
-    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.livraisons_pretes|default:"0" }}</p>
-    <p class="text-xs text-zinc-400 mt-1">Alertes livraison prête</p>
+    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.livraisons_sacs_mois|default:"0" }} <span class="text-sm font-normal text-zinc-400">sacs</span></p>
+    <p class="text-xs text-zinc-400 mt-1">{{ kpi.livraisons_mois|default:"0" }} retrait{{ kpi.livraisons_mois|pluralize }} ce mois · {{ kpi.livraisons_pretes|default:"0" }} alerte{{ kpi.livraisons_pretes|pluralize }} en attente</p>
   </div>
   {% endif %}
 
@@ -125,7 +130,17 @@
   <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-emerald-500 p-5">
     <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Lots validés</p>
     <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.lots_valides|default:"0" }}</p>
-    <p class="text-xs text-zinc-400 mt-1">{{ kpi.lots_en_attente|default:"0" }} en attente validation</p>
+    <p class="text-xs text-zinc-400 mt-1">
+      {{ kpi.lots_en_attente|default:"0" }} en attente · {{ kpi.lots_valides_mois|default:"0" }} validé{{ kpi.lots_valides_mois|pluralize }} ce mois
+    </p>
+  </div>
+  {% endif %}
+
+  {% if user.role in 'ADMIN,MEUNIER' %}
+  <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-sky-500 p-5">
+    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Production (mois)</p>
+    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.production_kg_mois|default:"0" }} <span class="text-sm font-normal text-zinc-400">kg</span></p>
+    <p class="text-xs text-zinc-400 mt-1">{{ kpi.productions_mois|default:"0" }} mouture{{ kpi.productions_mois|pluralize }} terminée{{ kpi.productions_mois|pluralize }}</p>
   </div>
   {% endif %}
 
@@ -139,34 +154,169 @@
 
 </div>
 
-{% if user.role == 'ADMIN' and stats_mensuelles.labels %}
-<div class="card p-6 mb-8">
-  <h2 class="text-sm font-semibold text-zinc-800 mb-4">Production par mois (kg farine)</h2>
-  <canvas id="chartProdMois" height="80"></canvas>
-</div>
+{% if show_stats_mensuelles and stats_mensuelles.labels %}
+<section class="mb-8">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div>
+      <h2 class="text-base font-semibold text-zinc-900">Statistiques par mois</h2>
+      <p class="text-xs text-zinc-400 mt-0.5">12 derniers mois — production, lots validés, livraisons et analyses labo</p>
+    </div>
+    {% if user.role in 'ADMIN,COMPTABLE' %}
+    <a href="{% url 'core:rapport' %}" class="text-xs text-blue-600 hover:underline">Rapport détaillé →</a>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="card px-4 py-3 border-l-4 border-l-blue-500">
+      <p class="text-[10px] font-semibold text-zinc-500 uppercase">Production</p>
+      <p class="text-lg font-bold text-zinc-900">{{ stats_mensuelles.totaux.production_kg }} kg</p>
+      <p class="text-xs text-zinc-400">{{ stats_mensuelles.totaux.production_nb }} moutures</p>
+    </div>
+    <div class="card px-4 py-3 border-l-4 border-l-emerald-500">
+      <p class="text-[10px] font-semibold text-zinc-500 uppercase">Lots validés</p>
+      <p class="text-lg font-bold text-zinc-900">{{ stats_mensuelles.totaux.lots_valides }}</p>
+      <p class="text-xs text-zinc-400">validations magasin</p>
+    </div>
+    <div class="card px-4 py-3 border-l-4 border-l-violet-500">
+      <p class="text-[10px] font-semibold text-zinc-500 uppercase">Livraisons</p>
+      <p class="text-lg font-bold text-zinc-900">{{ stats_mensuelles.totaux.livraisons_sacs }} sacs</p>
+      <p class="text-xs text-zinc-400">bons de retrait</p>
+    </div>
+    <div class="card px-4 py-3 border-l-4 border-l-indigo-500">
+      <p class="text-[10px] font-semibold text-zinc-500 uppercase">Analyses labo</p>
+      <p class="text-lg font-bold text-zinc-900">{{ stats_mensuelles.totaux.analyses_labo }}</p>
+      <p class="text-xs text-zinc-400">résultats encodés</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+    <div class="card p-5">
+      <h3 class="text-sm font-semibold text-zinc-800 mb-1">Production par mois</h3>
+      <p class="text-xs text-zinc-400 mb-4">Date de fin de mouture · kg farine et nombre de productions</p>
+      <canvas id="chartProduction" height="120"></canvas>
+    </div>
+    <div class="card p-5">
+      <h3 class="text-sm font-semibold text-zinc-800 mb-1">Lots, livraisons &amp; labo</h3>
+      <p class="text-xs text-zinc-400 mb-4">Validations, retraits clients et analyses par mois</p>
+      <canvas id="chartActivite" height="120"></canvas>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100">
+      <h3 class="text-sm font-semibold text-zinc-800">Tableau récapitulatif mensuel</h3>
+      <p class="text-xs text-zinc-400 mt-0.5">Vue consolidée pour la prise de décision</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Mois</th>
+            <th class="table-th text-right">Moutures</th>
+            <th class="table-th text-right">Farine (kg)</th>
+            <th class="table-th text-right">Lots validés</th>
+            <th class="table-th text-right">Retraits</th>
+            <th class="table-th text-right">Sacs livrés</th>
+            <th class="table-th text-right">Échantillons</th>
+            <th class="table-th text-right">Analyses</th>
+            <th class="table-th text-right">Conformes</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for row in stats_mensuelles.rows %}
+          <tr class="hover:bg-zinc-50 {% if forloop.last %}bg-blue-50/30 font-medium{% endif %}">
+            <td class="table-td">{{ row.mois }}</td>
+            <td class="table-td text-right">{{ row.production_nb }}</td>
+            <td class="table-td text-right text-blue-700">{{ row.production_kg|floatformat:0 }}</td>
+            <td class="table-td text-right text-emerald-700">{{ row.lots_valides }}</td>
+            <td class="table-td text-right">{{ row.livraisons_nb }}</td>
+            <td class="table-td text-right text-violet-700">{{ row.livraisons_sacs }}</td>
+            <td class="table-td text-right">{{ row.echantillons_nb }}</td>
+            <td class="table-td text-right text-indigo-700">{{ row.analyses_nb }}</td>
+            <td class="table-td text-right">{{ row.analyses_conformes }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-zinc-50 border-t font-semibold text-sm">
+          <tr>
+            <td class="table-td">Total 12 mois</td>
+            <td class="table-td text-right">{{ stats_mensuelles.totaux.production_nb }}</td>
+            <td class="table-td text-right">{{ stats_mensuelles.totaux.production_kg|floatformat:0 }}</td>
+            <td class="table-td text-right">{{ stats_mensuelles.totaux.lots_valides }}</td>
+            <td class="table-td text-right">—</td>
+            <td class="table-td text-right">{{ stats_mensuelles.totaux.livraisons_sacs }}</td>
+            <td class="table-td text-right">—</td>
+            <td class="table-td text-right">{{ stats_mensuelles.totaux.analyses_labo }}</td>
+            <td class="table-td text-right">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-const ctx = document.getElementById('chartProdMois');
-if (ctx) {
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: {{ chart_labels|safe }},
-      datasets: [{
-        label: 'Farine produite (kg)',
-        data: {{ chart_values|safe }},
-        backgroundColor: 'rgba(59, 130, 246, 0.6)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 1,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-}
+(function() {
+  const labels = {{ chart_labels|safe }};
+  const prodCtx = document.getElementById('chartProduction');
+  if (prodCtx) {
+    new Chart(prodCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Farine (kg)',
+            data: {{ chart_production_kg|safe }},
+            backgroundColor: 'rgba(59, 130, 246, 0.65)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Nb moutures',
+            data: {{ chart_production_nb|safe }},
+            type: 'line',
+            borderColor: 'rgb(249, 115, 22)',
+            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+            tension: 0.3,
+            yAxisID: 'y1',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'kg' } },
+          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Nb' } },
+        },
+      },
+    });
+  }
+  const actCtx = document.getElementById('chartActivite');
+  if (actCtx) {
+    new Chart(actCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Lots validés', data: {{ chart_lots_valides|safe }}, borderColor: 'rgb(16, 185, 129)', tension: 0.3 },
+          { label: 'Sacs livrés', data: {{ chart_livraisons|safe }}, borderColor: 'rgb(139, 92, 246)', tension: 0.3 },
+          { label: 'Analyses labo', data: {{ chart_analyses|safe }}, borderColor: 'rgb(99, 102, 241)', tension: 0.3 },
+        ],
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+  }
+})();
 </script>
 {% endif %}
 
@@ -231,6 +381,7 @@ if (ctx) {
     </div>
   </div>
 
+  <div class="space-y-6">
   <!-- Alertes récentes -->
   <div class="card overflow-hidden">
     <div class="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
@@ -343,6 +494,8 @@ if (ctx) {
       {% endif %}
 
     </div>
+  </div>
+
   </div>
 
 </div>

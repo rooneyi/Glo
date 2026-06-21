@@ -1,9 +1,9 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -15,7 +15,9 @@ from facturation.models import Alerte, BonRetrait
 from contrats.models import ContratMouture
 from laboratoire.models import Echantillon, ResultatLaboratoire
 from magasin.models import Reception, StockMP
-from production.models import BonCession, Production, ProduitFini, StockFarine
+from production.models import BonCession, HistoriqueLot, Production, ProduitFini, StockFarine
+
+NB_MOIS_STATS = 12
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -59,6 +61,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             kpi['livraisons_pretes'] = Alerte.objects.filter(
                 type='LIVRAISON_PRETE', lu=False,
             ).count()
+            livraisons_mois = BonRetrait.objects.filter(
+                date_retrait__year=now.year, date_retrait__month=now.month,
+            )
+            kpi['livraisons_mois'] = livraisons_mois.count()
+            kpi['livraisons_sacs_mois'] = livraisons_mois.aggregate(
+                t=Sum('quantite_sacs'),
+            )['t'] or 0
 
         if user.role in ('ADMIN', 'LABORANTIN', 'MEUNIER'):
             kpi['analyses_en_cours'] = Echantillon.objects.filter(
@@ -67,10 +76,23 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             kpi['resultats_labo'] = ResultatLaboratoire.objects.filter(
                 date_analyse__year=now.year, date_analyse__month=now.month,
             ).count()
+            kpi['echantillons_mois'] = Echantillon.objects.filter(
+                date_envoi_labo__year=now.year, date_envoi_labo__month=now.month,
+            ).count()
+            kpi['analyses_conformes_mois'] = ResultatLaboratoire.objects.filter(
+                date_analyse__year=now.year,
+                date_analyse__month=now.month,
+                conforme=True,
+            ).count()
 
         if user.role in ('ADMIN', 'MEUNIER', 'MAGASINIER', 'COMPTABLE'):
             kpi['lots_valides'] = ProduitFini.objects.filter(statut_lot='VALIDE').count()
             kpi['lots_en_attente'] = ProduitFini.objects.filter(statut_lot='EN_ATTENTE').count()
+            kpi['lots_valides_mois'] = HistoriqueLot.objects.filter(
+                type_evenement='VALIDATION',
+                date_evenement__year=now.year,
+                date_evenement__month=now.month,
+            ).count()
 
         if user.role in ('ADMIN', 'MEUNIER'):
             stock_f = StockFarine.objects.aggregate(
@@ -78,6 +100,15 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             )
             kpi['stock_farine_sacs'] = stock_f['sacs'] or 0
             kpi['stock_farine_kg'] = round(stock_f['kg'] or 0, 1)
+            prod_mois = Production.objects.filter(
+                statut='TERMINE',
+                date_fin__year=now.year,
+                date_fin__month=now.month,
+            )
+            kpi['productions_mois'] = prod_mois.count()
+            kpi['production_kg_mois'] = round(
+                prod_mois.aggregate(t=Sum('quantite_farine_kg'))['t'] or 0, 1,
+            )
 
         if user.role == 'ADMIN':
             rend = Production.objects.filter(statut='TERMINE').aggregate(
@@ -86,29 +117,144 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             kpi['rendement_moyen'] = round(rend['avg'] or 0, 1)
 
         ctx['kpi'] = kpi
-        stats = self._stats_production_mensuelle()
-        ctx['stats_mensuelles'] = stats
-        ctx['chart_labels'] = json.dumps(stats['labels'])
-        ctx['chart_values'] = json.dumps(stats['values'])
+
+        show_stats = user.role in ('ADMIN', 'COMPTABLE', 'MEUNIER', 'MAGASINIER', 'LABORANTIN')
+        ctx['show_stats_mensuelles'] = show_stats
+        if show_stats:
+            stats = self._stats_dashboard_mensuel()
+            ctx['stats_mensuelles'] = stats
+            ctx['chart_labels'] = json.dumps(stats['labels'])
+            ctx['chart_production_kg'] = json.dumps(stats['production_kg'])
+            ctx['chart_production_nb'] = json.dumps(stats['production_nb'])
+            ctx['chart_lots_valides'] = json.dumps(stats['lots_valides'])
+            ctx['chart_livraisons'] = json.dumps(stats['livraisons_sacs'])
+            ctx['chart_analyses'] = json.dumps(stats['analyses_labo'])
+
         ctx['activite_recente'] = self._activite_recente(user)
         return ctx
 
-    def _stats_production_mensuelle(self):
-        """Production (kg farine) par mois — 6 derniers mois."""
-        qs = (
-            Production.objects.filter(statut='TERMINE')
-            .annotate(mois=TruncMonth('date_fin'))
+    @staticmethod
+    def _derniers_mois(n: int = NB_MOIS_STATS) -> list[date]:
+        today = timezone.now().date().replace(day=1)
+        months = [today]
+        current = today
+        for _ in range(n - 1):
+            if current.month == 1:
+                current = date(current.year - 1, 12, 1)
+            else:
+                current = date(current.year, current.month - 1, 1)
+            months.insert(0, current)
+        return months
+
+    @staticmethod
+    def _dict_par_mois(qs, date_field: str, **aggregations) -> dict:
+        rows = (
+            qs.annotate(mois=TruncMonth(date_field))
             .values('mois')
-            .annotate(total_kg=Sum('quantite_farine_kg'), nb=Count('id'))
-            .order_by('mois')[:6]
+            .annotate(**aggregations)
+            .order_by('mois')
         )
-        labels, values, counts = [], [], []
-        for row in qs:
-            if row['mois']:
-                labels.append(row['mois'].strftime('%b %Y'))
-                values.append(round(row['total_kg'] or 0, 1))
-                counts.append(row['nb'])
-        return {'labels': labels, 'values': values, 'counts': counts}
+        return {
+            (row['mois'].year, row['mois'].month): row
+            for row in rows
+            if row['mois']
+        }
+
+    def _stats_dashboard_mensuel(self) -> dict:
+        """Statistiques mensuelles sur 12 mois — production, lots, livraisons, labo."""
+        mois_list = self._derniers_mois(NB_MOIS_STATS)
+        debut = mois_list[0]
+
+        prod_map = self._dict_par_mois(
+            Production.objects.filter(statut='TERMINE', date_fin__gte=debut),
+            'date_fin',
+            total_kg=Sum('quantite_farine_kg'),
+            nb=Count('id'),
+        )
+        lots_map = self._dict_par_mois(
+            HistoriqueLot.objects.filter(
+                type_evenement='VALIDATION',
+                date_evenement__gte=debut,
+            ),
+            'date_evenement',
+            nb=Count('id'),
+        )
+        livraisons_map = self._dict_par_mois(
+            BonRetrait.objects.filter(date_retrait__gte=debut),
+            'date_retrait',
+            sacs=Sum('quantite_sacs'),
+            nb=Count('id'),
+        )
+        analyses_map = self._dict_par_mois(
+            ResultatLaboratoire.objects.filter(date_analyse__gte=debut),
+            'date_analyse',
+            nb=Count('id'),
+            conformes=Count('id', filter=Q(conforme=True)),
+        )
+        echantillons_map = self._dict_par_mois(
+            Echantillon.objects.filter(date_envoi_labo__gte=debut),
+            'date_envoi_labo',
+            nb=Count('id'),
+        )
+
+        labels, production_kg, production_nb = [], [], []
+        lots_valides, livraisons_sacs, analyses_labo = [], [], []
+        echantillons_envoyes, table_rows = [], []
+
+        for mois in mois_list:
+            key = (mois.year, mois.month)
+            label = mois.strftime('%b %Y')
+            labels.append(label)
+
+            p = prod_map.get(key, {})
+            kg = round(p.get('total_kg') or 0, 1)
+            p_nb = p.get('nb') or 0
+            production_kg.append(kg)
+            production_nb.append(p_nb)
+
+            l_nb = lots_map.get(key, {}).get('nb') or 0
+            lots_valides.append(l_nb)
+
+            liv = livraisons_map.get(key, {})
+            l_sacs = liv.get('sacs') or 0
+            livraisons_sacs.append(l_sacs)
+
+            a_nb = analyses_map.get(key, {}).get('nb') or 0
+            analyses_labo.append(a_nb)
+
+            e_nb = echantillons_map.get(key, {}).get('nb') or 0
+            echantillons_envoyes.append(e_nb)
+
+            table_rows.append({
+                'mois': label,
+                'mois_key': mois.isoformat(),
+                'production_nb': p_nb,
+                'production_kg': kg,
+                'lots_valides': l_nb,
+                'livraisons_nb': liv.get('nb') or 0,
+                'livraisons_sacs': l_sacs,
+                'analyses_nb': a_nb,
+                'analyses_conformes': analyses_map.get(key, {}).get('conformes') or 0,
+                'echantillons_nb': e_nb,
+            })
+
+        return {
+            'labels': labels,
+            'production_kg': production_kg,
+            'production_nb': production_nb,
+            'lots_valides': lots_valides,
+            'livraisons_sacs': livraisons_sacs,
+            'analyses_labo': analyses_labo,
+            'echantillons_envoyes': echantillons_envoyes,
+            'rows': table_rows,
+            'totaux': {
+                'production_kg': round(sum(production_kg), 1),
+                'production_nb': sum(production_nb),
+                'lots_valides': sum(lots_valides),
+                'livraisons_sacs': sum(livraisons_sacs),
+                'analyses_labo': sum(analyses_labo),
+            },
+        }
 
     def _activite_recente(self, user):
         events = []
