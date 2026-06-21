@@ -50,6 +50,19 @@
         {% if form.quantite_kg.errors %}<p class="form-error">{{ form.quantite_kg.errors|join:", " }}</p>{% endif %}
       </div>
 
+      <div>
+        <label class="form-label" for="{{ form.type_mouture.id_for_label }}">Type de mouture <span class="text-red-500">*</span></label>
+        <select name="type_mouture" id="{{ form.type_mouture.id_for_label }}"
+          class="form-input {% if form.type_mouture.errors %}border-red-400{% endif %}">
+          {% with selected_type=form.type_mouture.value|default:"MOUTURE" %}
+          {% for val, label in form.fields.type_mouture.choices %}
+          <option value="{{ val }}" {% if selected_type|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+          {% endwith %}
+        </select>
+        {% if form.type_mouture.errors %}<p class="form-error">{{ form.type_mouture.errors|join:", " }}</p>{% endif %}
+      </div>
+
       {% if object %}
       <div>
         <label class="form-label" for="{{ form.statut.id_for_label }}">Statut</label>

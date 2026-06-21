@@ -94,7 +94,8 @@ Les templates sont centralisés dans `templates/<nom_app>/` (convention Django `
 |------------------------|------------|---------|----------------|
 | `Utilisateur` | `accounts` | `models.py` | Rôle ENUM, hérite `AbstractUser` |
 | `Client` | `clients` | `models.py` | FK → Utilisateur (enregistre_par) |
-| `ContratMouture` | `contrats` | `models.py` | FK → Client, Utilisateur (comptable) |
+| `Commande` | `contrats` | `models.py` | FK → Client, Utilisateur (comptable) |
+| `ContratMouture` | `contrats` | `models.py` | FK → Client, OneToOne → Commande, Utilisateur (comptable) |
 | `Reception` | `magasin` | `models.py` | OneToOne → ContratMouture |
 | `StockMP` | `magasin` | `models.py` | FK → Reception |
 | `Echantillon` | `laboratoire` | `models.py` | OneToOne → Reception |
@@ -111,7 +112,7 @@ Ces choix sont documentés dans le diagramme draw.io :
 
 - **Utilisateur unifié** avec attribut `role` (ENUM) au lieu de classes séparées par acteur ;
 - **Echantillon** et **ResultatLaboratoire** ajoutés pour le flux labo Likasi ;
-- **ContratMouture** renommé (était « Commande ») ;
+- **ContratMouture** distinct de **Commande** : la commande est la demande client ; le contrat est créé après validation comptable ;
 - **Bon de réception** (`Reception`) séparé du **bon de retrait** (`BonRetrait`) ;
 - **StockMP** et **StockFarine** distincts (matière première vs produit fini) ;
 - **Production** (mouture) clairement définie avec rendement calculé.
@@ -120,6 +121,7 @@ Ces choix sont documentés dans le diagramme draw.io :
 
 | Entité | Préfixe | Exemple |
 |--------|---------|---------|
+| Commande | `CMD-` | `CMD-20250616-0001` |
 | Contrat de mouture | `CM-` | `CM-20250616-0001` |
 | Bon de réception | `BRC-` | `BRC-20250616-0001` |
 | Échantillon | `ECH-` | `ECH-20250616-0001` |

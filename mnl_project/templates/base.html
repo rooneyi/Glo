@@ -68,6 +68,14 @@
       </svg>
       Tableau de bord
     </a>
+    {% if user.role in 'ADMIN,COMPTABLE' %}
+    <a href="{% url 'core:rapport' %}" class="nav-link {% if '/rapport/' in path %}active{% endif %}">
+      <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Rapport quantités
+    </a>
+    {% endif %}
 
     {% if user.role == 'ADMIN' %}
     <p class="nav-section">Administration</p>
@@ -120,6 +128,12 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
       </svg>
       Stock matières premières
+    </a>
+    <a href="{% url 'magasin:bons_cession_list' %}" class="nav-link {% if '/magasin/bons-cession' in path %}active{% endif %}">
+      <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Bons de cession PF
     </a>
     {% endif %}
 

@@ -6,9 +6,11 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView
 
+from production.models import BonCession, HistoriqueLot, ProduitFini
 from .forms import ReceptionForm
 from .models import Reception, StockMP
 
@@ -102,3 +104,44 @@ class StockMPView(LoginRequiredMixin, View):
             'page_obj': page_obj,
             'total_kg': round(total, 1),
         })
+
+
+# ── Bons de cession produits finis ────────────────────────────────────────────
+
+class ListeBonsCessionView(MagasinierRequiredMixin, View):
+    def get(self, request):
+        qs = BonCession.objects.select_related(
+            'production__contrat__client', 'meunier', 'magasinier',
+        ).order_by('-date_cession')
+        statut = request.GET.get('statut', '').strip()
+        if statut:
+            qs = qs.filter(statut=statut)
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'magasin/bons_cession/list.html', {
+            'page_obj': page_obj,
+            'statuts': BonCession.STATUTS,
+        })
+
+
+class RecevoirBonCessionView(MagasinierRequiredMixin, View):
+    def post(self, request, pk):
+        bon = get_object_or_404(BonCession, pk=pk, statut='EN_ATTENTE')
+        bon.statut = 'RECU'
+        bon.magasinier = request.user
+        bon.date_reception = timezone.now()
+        bon.save()
+
+        for produit in bon.production.produits_finis.all():
+            produit.statut_lot = 'VALIDE'
+            produit.save(update_fields=['statut_lot'])
+            HistoriqueLot.objects.create(
+                produit_fini=produit,
+                type_evenement='VALIDATION',
+                description=f"Lot validé — bon {bon.numero_bon} reçu par {request.user}",
+                quantite_sacs=produit.nombre_sacs,
+                quantite_kg=produit.poids_total_kg,
+                auteur=request.user,
+            )
+        messages.success(request, f"Bon {bon.numero_bon} reçu — lots validés.")
+        return redirect('magasin:bons_cession_list')

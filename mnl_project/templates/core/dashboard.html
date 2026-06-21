@@ -98,7 +98,70 @@
   </div>
   {% endif %}
 
+  {% if user.role in 'ADMIN,LABORANTIN,MEUNIER' %}
+  <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-indigo-500 p-5">
+    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Laboratoire</p>
+    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.analyses_en_cours|default:"0" }}</p>
+    <p class="text-xs text-zinc-400 mt-1">Analyses en cours · {{ kpi.resultats_labo|default:"0" }} ce mois</p>
+  </div>
+  {% endif %}
+
+  {% if user.role in 'ADMIN,COMPTABLE' %}
+  <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-violet-500 p-5">
+    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Livraisons</p>
+    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.livraisons_pretes|default:"0" }}</p>
+    <p class="text-xs text-zinc-400 mt-1">Alertes livraison prête</p>
+  </div>
+  {% endif %}
+
+  {% if user.role in 'ADMIN,MEUNIER,MAGASINIER,COMPTABLE' %}
+  <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-emerald-500 p-5">
+    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Lots validés</p>
+    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.lots_valides|default:"0" }}</p>
+    <p class="text-xs text-zinc-400 mt-1">{{ kpi.lots_en_attente|default:"0" }} en attente validation</p>
+  </div>
+  {% endif %}
+
+  {% if user.role in 'ADMIN,MAGASINIER' %}
+  <div class="bg-white rounded-xl shadow-sm border border-zinc-200 border-l-4 border-l-amber-500 p-5">
+    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Bons cession</p>
+    <p class="text-2xl font-bold text-zinc-900 mt-2">{{ kpi.bons_cession_attente|default:"0" }}</p>
+    <p class="text-xs text-zinc-400 mt-1">À recevoir (produits finis)</p>
+  </div>
+  {% endif %}
+
 </div>
+
+{% if user.role == 'ADMIN' and stats_mensuelles.labels %}
+<div class="card p-6 mb-8">
+  <h2 class="text-sm font-semibold text-zinc-800 mb-4">Production par mois (kg farine)</h2>
+  <canvas id="chartProdMois" height="80"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+const ctx = document.getElementById('chartProdMois');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [{
+        label: 'Farine produite (kg)',
+        data: {{ chart_values|safe }},
+        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+        borderColor: 'rgb(59, 130, 246)',
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+</script>
+{% endif %}
 
 <!-- Contenu principal selon le rôle -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -215,9 +278,22 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
         </svg>
       </a>
-      {% endif %}
 
-      {% if user.role == 'ADMIN' %}
+      <a href="{% url 'magasin:bons_cession_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-zinc-50 group transition-colors">
+        <div class="w-9 h-9 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center transition-colors shrink-0">
+          <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-zinc-800">Bons de cession PF</p>
+          <p class="text-xs text-zinc-400">Recevoir les sacs produits par le meunier{% if kpi.bons_cession_attente %} · {{ kpi.bons_cession_attente }} en attente{% endif %}</p>
+        </div>
+        <svg class="w-4 h-4 text-zinc-300 group-hover:text-zinc-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+      {% endif %}
       <a href="{% url 'accounts:user_create' %}" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-zinc-50 group transition-colors">
         <div class="w-9 h-9 rounded-xl bg-purple-50 group-hover:bg-purple-100 flex items-center justify-center transition-colors shrink-0">
           <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

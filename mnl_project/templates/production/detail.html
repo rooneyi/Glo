@@ -30,6 +30,7 @@
       <div class="px-6 py-5 grid grid-cols-2 gap-4">
         <div><p class="text-xs text-zinc-400">Client</p><p class="text-sm font-semibold">{{ production.contrat.client }}</p></div>
         <div><p class="text-xs text-zinc-400">Contrat</p><p class="text-sm font-mono">{{ production.contrat.numero_contrat }}</p></div>
+        <div><p class="text-xs text-zinc-400">Type mouture</p><p class="text-sm">{{ production.contrat.get_type_mouture_display }}</p></div>
         <div><p class="text-xs text-zinc-400">Date début</p><p class="text-sm">{{ production.date_debut|date:"d/m/Y" }}</p></div>
         <div><p class="text-xs text-zinc-400">Date fin</p><p class="text-sm">{{ production.date_fin|date:"d/m/Y"|default:"—" }}</p></div>
         <div><p class="text-xs text-zinc-400">Maïs traité</p><p class="text-lg font-bold">{{ production.quantite_traitee_kg|floatformat:0 }} kg</p></div>
@@ -46,19 +47,26 @@
       <div class="px-6 py-4 border-b border-zinc-100"><h2 class="text-sm font-semibold">Sacs produits</h2></div>
       <table class="w-full">
         <thead class="bg-zinc-50 border-b"><tr>
-          <th class="table-th">Lot</th><th class="table-th">Type</th><th class="table-th">Sacs</th><th class="table-th">Poids</th><th class="table-th">Date</th>
+          <th class="table-th">Lot</th><th class="table-th">Type</th><th class="table-th">Sacs</th><th class="table-th">Poids</th><th class="table-th">Statut</th><th class="table-th">Date</th>
         </tr></thead>
         <tbody class="divide-y divide-zinc-100">
           {% for pf in produits %}
           <tr>
-            <td class="table-td font-mono text-xs">{{ pf.reference_lot }}</td>
+            <td class="table-td font-mono text-xs">
+              <a href="{% url 'production:historique_lot' pf.pk %}" class="text-blue-600 hover:underline">{{ pf.reference_lot }}</a>
+            </td>
             <td class="table-td">{{ pf.get_type_sac_display }}</td>
             <td class="table-td font-semibold">{{ pf.nombre_sacs }}</td>
             <td class="table-td">{{ pf.poids_total_kg|floatformat:0 }} kg</td>
+            <td class="table-td">
+              <span class="text-xs px-2 py-0.5 rounded-full {% if pf.statut_lot == 'VALIDE' %}bg-green-50 text-green-700{% else %}bg-zinc-100 text-zinc-600{% endif %}">
+                {{ pf.get_statut_lot_display }}
+              </span>
+            </td>
             <td class="table-td text-zinc-400">{{ pf.date_ensachage|date:"d/m/Y" }}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="5" class="table-td text-zinc-400 italic py-8 text-center">Aucun ensachage enregistré</td></tr>
+          <tr><td colspan="6" class="table-td text-zinc-400 italic py-8 text-center">Aucun ensachage enregistré</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -74,6 +82,18 @@
         {% endif %}
         {% if peut_terminer %}
         <a href="{% url 'production:terminer' production.pk %}" class="btn-primary w-full justify-center text-xs">Clôturer la mouture</a>
+        {% endif %}
+        {% if peut_generer_cession %}
+        <form method="post" action="{% url 'production:bon_cession' production.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-primary w-full justify-center text-xs">Générer bon de cession</button>
+        </form>
+        {% endif %}
+        {% if bon_cession %}
+        <div class="p-3 bg-amber-50 rounded-lg text-xs">
+          <p class="font-semibold text-amber-800">Bon {{ bon_cession.numero_bon }}</p>
+          <p class="text-amber-700 mt-1">{{ bon_cession.get_statut_display }} — {{ bon_cession.nombre_sacs_25|add:bon_cession.nombre_sacs_50 }} sac(s)</p>
+        </div>
         {% endif %}
         <a href="{% url 'production:stock_farine' %}" class="btn-secondary w-full justify-center text-xs">Voir stock farine</a>
       </div>

@@ -54,6 +54,7 @@
           <th class="table-th">N° Contrat</th>
           <th class="table-th">Client</th>
           <th class="table-th">Qté maïs</th>
+          <th class="table-th">Type</th>
           <th class="table-th">Statut</th>
           <th class="table-th">Date</th>
           <th class="table-th">Comptable</th>
@@ -70,6 +71,7 @@
             <p class="font-medium text-zinc-900">{{ c.client }}</p>
           </td>
           <td class="table-td text-zinc-700 font-medium">{{ c.quantite_kg|floatformat:0 }} <span class="text-zinc-400 font-normal">kg</span></td>
+          <td class="table-td text-zinc-600 text-sm">{{ c.get_type_mouture_display }}</td>
           <td class="table-td">
             <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full
               {% if c.statut == 'EN_ATTENTE' %}bg-yellow-50 text-yellow-700
@@ -97,7 +99,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="py-16 text-center text-sm text-zinc-400">Aucun contrat trouvé</td></tr>
+        <tr><td colspan="8" class="py-16 text-center text-sm text-zinc-400">Aucun contrat trouvé</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -21,6 +21,12 @@ class ReceptionForm(forms.ModelForm):
         ).select_related('client').order_by('-date_contrat')
         self.fields['contrat'].queryset = qs
         self.fields['contrat'].empty_label = '— Choisir un contrat —'
+        self.fields['contrat'].label_from_instance = (
+            lambda c: (
+                f"{c.numero_contrat} — {c.client} "
+                f"({c.get_type_mouture_display()}, {c.quantite_kg:.0f} kg)"
+            )
+        )
 
     def clean(self):
         cd = super().clean()

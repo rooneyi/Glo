@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Bons de cession — MNL{% endblock %}
+{% block page_title %}Bons de cession produits finis{% endblock %}
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400">Produits finis émis par le meunier à réceptionner</p>
+{% endblock %}
+
+{% block content %}
+<div class="card overflow-hidden">
+  <table class="w-full">
+    <thead class="bg-zinc-50 border-b">
+      <tr>
+        <th class="table-th">N° bon</th>
+        <th class="table-th">Production</th>
+        <th class="table-th">Client</th>
+        <th class="table-th">Sacs 25 / 50</th>
+        <th class="table-th">Poids</th>
+        <th class="table-th">Meunier</th>
+        <th class="table-th">Statut</th>
+        <th class="table-th"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-zinc-100">
+      {% for bon in page_obj %}
+      <tr>
+        <td class="table-td font-mono text-xs">{{ bon.numero_bon }}</td>
+        <td class="table-td">{{ bon.production.numero_production }}</td>
+        <td class="table-td">{{ bon.production.contrat.client }}</td>
+        <td class="table-td">{{ bon.nombre_sacs_25 }} / {{ bon.nombre_sacs_50 }}</td>
+        <td class="table-td">{{ bon.poids_total_kg|floatformat:0 }} kg</td>
+        <td class="table-td text-sm">{{ bon.meunier.get_full_name }}</td>
+        <td class="table-td">
+          <span class="text-xs px-2 py-0.5 rounded-full {% if bon.statut == 'EN_ATTENTE' %}bg-amber-50 text-amber-700{% else %}bg-green-50 text-green-700{% endif %}">
+            {{ bon.get_statut_display }}
+          </span>
+        </td>
+        <td class="table-td text-right">
+          {% if bon.statut == 'EN_ATTENTE' %}
+          <form method="post" action="{% url 'magasin:bon_cession_recevoir' bon.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary text-xs py-1.5 px-3">Recevoir</button>
+          </form>
+          {% else %}
+          <span class="text-xs text-zinc-400">{{ bon.date_reception|date:"d/m/Y H:i" }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="table-td text-center text-zinc-400 py-10">Aucun bon de cession</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex justify-center gap-2">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}" class="btn-secondary text-xs">Précédent</a>
+  {% endif %}
+  <span class="text-sm text-zinc-500 self-center">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}" class="btn-secondary text-xs">Suivant</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

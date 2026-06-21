@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,7 +12,7 @@ from django.views.generic import CreateView, DetailView
 from facturation.models import Alerte
 from accounts.models import Utilisateur
 from .forms import ProductionLancerForm, ProductionTerminerForm, ProduitFiniForm
-from .models import Production, ProduitFini, StockFarine
+from .models import Production, ProduitFini, StockFarine, BonCession, HistoriqueLot
 
 
 class MeunierRequiredMixin(LoginRequiredMixin):
@@ -48,6 +49,16 @@ class DetailProductionView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
         ctx['produits'] = self.object.produits_finis.all()
+        try:
+            ctx['bon_cession'] = self.object.bon_cession
+        except ObjectDoesNotExist:
+            ctx['bon_cession'] = None
+        ctx['peut_generer_cession'] = (
+            self.object.statut == 'TERMINE'
+            and self.object.produits_finis.exists()
+            and ctx['bon_cession'] is None
+            and user.role in ('ADMIN', 'MEUNIER')
+        )
         ctx['peut_terminer'] = (
             self.object.statut == 'EN_COURS' and user.role in ('ADMIN', 'MEUNIER')
         )
@@ -155,3 +166,60 @@ class StockFarineView(LoginRequiredMixin, View):
             'total_sacs': total['sacs'] or 0,
             'total_kg': round(total['kg'] or 0, 1),
         })
+
+
+class GenererBonCessionView(MeunierRequiredMixin, View):
+    """Le meunier génère le bon de cession produits finis pour le magasinier."""
+
+    def post(self, request, pk):
+        production = get_object_or_404(Production, pk=pk, statut='TERMINE')
+        if hasattr(production, 'bon_cession'):
+            messages.warning(request, "Un bon de cession existe déjà pour cette production.")
+            return redirect('production:detail', pk=pk)
+        produits = production.produits_finis.all()
+        if not produits.exists():
+            messages.error(request, "Aucun produit ensaché — impossible de générer le bon.")
+            return redirect('production:detail', pk=pk)
+
+        sacs_25 = sum(p.nombre_sacs for p in produits if p.type_sac == '25KG')
+        sacs_50 = sum(p.nombre_sacs for p in produits if p.type_sac == '50KG')
+        poids = sum(p.poids_total_kg for p in produits)
+
+        bon = BonCession.objects.create(
+            production=production,
+            meunier=request.user,
+            nombre_sacs_25=sacs_25,
+            nombre_sacs_50=sacs_50,
+            poids_total_kg=poids,
+        )
+        for produit in produits:
+            HistoriqueLot.objects.create(
+                produit_fini=produit,
+                type_evenement='CESSION',
+                description=f"Bon de cession {bon.numero_bon} émis par {request.user}",
+                quantite_sacs=produit.nombre_sacs,
+                quantite_kg=produit.poids_total_kg,
+                auteur=request.user,
+            )
+        for mag in Utilisateur.objects.filter(role='MAGASINIER', actif=True):
+            Alerte.objects.create(
+                type='LIVRAISON_PRETE',
+                message=(
+                    f"Bon de cession {bon.numero_bon} — "
+                    f"{bon.nombre_sacs_25 + bon.nombre_sacs_50} sac(s) à recevoir."
+                ),
+                destinataire=mag,
+            )
+        messages.success(request, f"Bon de cession {bon.numero_bon} généré.")
+        return redirect('production:detail', pk=pk)
+
+
+class HistoriqueLotView(LoginRequiredMixin, DetailView):
+    model = ProduitFini
+    template_name = 'production/historique_lot.html'
+    context_object_name = 'produit'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['evenements'] = self.object.historique.select_related('auteur')
+        return ctx
