@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Lots de farine — MNL{% endblock %}
+{% block page_title %}Historique des lots{% endblock %}
+{% block breadcrumb %}<p class="text-xs text-zinc-400">Production · Traçabilité lots</p>{% endblock %}
+
+{% block content %}
+<form method="get" class="flex flex-wrap gap-3 mb-5">
+  <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Lot ou client…"
+         class="input-field max-w-xs text-sm">
+  <select name="statut" class="input-field max-w-[200px] text-sm" onchange="this.form.submit()">
+    <option value="">Tous statuts</option>
+    {% for val, label in statuts %}
+    <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-secondary text-sm">Filtrer</button>
+</form>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-zinc-50 border-b">
+        <tr>
+          <th class="table-th">Lot</th>
+          <th class="table-th">Client</th>
+          <th class="table-th">Production</th>
+          <th class="table-th">Sacs</th>
+          <th class="table-th">Statut</th>
+          <th class="table-th">Ensachage</th>
+          <th class="table-th"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-100">
+        {% for lot in page_obj %}
+        <tr class="hover:bg-zinc-50">
+          <td class="table-td font-mono text-xs">{{ lot.reference_lot }}</td>
+          <td class="table-td">{{ lot.production.contrat.client }}</td>
+          <td class="table-td font-mono text-xs">{{ lot.production.numero_production }}</td>
+          <td class="table-td">{{ lot.nombre_sacs }} × {{ lot.get_type_sac_display }}</td>
+          <td class="table-td">
+            <span class="text-xs px-2 py-0.5 rounded-full {% if lot.statut_lot == 'VALIDE' %}bg-green-50 text-green-700{% else %}bg-zinc-100 text-zinc-600{% endif %}">
+              {{ lot.get_statut_lot_display }}
+            </span>
+          </td>
+          <td class="table-td text-zinc-400 text-xs">{{ lot.date_ensachage|date:"d/m/Y" }}</td>
+          <td class="table-td text-right">
+            <a href="{% url 'production:historique_lot' lot.pk %}" class="text-xs text-blue-600 hover:underline">Historique complet</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="py-12 text-center text-zinc-400">Aucun lot enregistré</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

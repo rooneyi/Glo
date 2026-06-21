@@ -67,7 +67,14 @@
       </div>
     </div>
     <p class="text-2xl font-bold {% if kpi.alertes_non_lues %}text-red-600{% else %}text-zinc-900{% endif %}">{{ kpi.alertes_non_lues|default:"0" }}</p>
-    <p class="text-xs text-zinc-400 mt-1">{% if kpi.alertes_non_lues %}Requièrent attention{% else %}Aucune alerte{% endif %}</p>
+    <p class="text-xs text-zinc-400 mt-1">
+      {% if kpi.alertes_non_lues %}
+      Labo {{ kpi.alertes_resultat_labo|default:"0" }} · Livraison {{ kpi.alertes_livraison|default:"0" }} · Retard {{ kpi.alertes_retard|default:"0" }}
+      {% else %}Aucune alerte{% endif %}
+    </p>
+    {% if kpi.alertes_non_lues %}
+    <a href="{% url 'facturation:alertes' %}" class="text-xs text-blue-600 hover:underline mt-2 inline-block">Voir les alertes →</a>
+    {% endif %}
   </div>
 
   {% if user.role == 'ADMIN' %}
@@ -220,6 +227,29 @@ if (ctx) {
         <p class="text-sm font-medium text-zinc-400">Aucune activité récente</p>
         <p class="text-xs text-zinc-300 mt-1">Les actions des dernières 24h apparaîtront ici</p>
       </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Alertes récentes -->
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-zinc-800">Alertes récentes</h2>
+      <a href="{% url 'facturation:alertes' %}" class="text-xs text-blue-600 hover:underline">Tout voir</a>
+    </div>
+    <div class="divide-y divide-zinc-50">
+      {% for a in alertes_recentes %}
+      <div class="px-5 py-3 {% if not a.lu %}bg-blue-50/40{% endif %}">
+        <p class="text-xs font-medium
+          {% if a.type == 'RESULTAT_LABO' %}text-indigo-600
+          {% elif a.type == 'LIVRAISON_PRETE' %}text-green-700
+          {% elif a.type == 'RETARD' %}text-red-600
+          {% else %}text-zinc-500{% endif %}">{{ a.get_type_display }}</p>
+        <p class="text-sm text-zinc-700 mt-0.5 line-clamp-2">{{ a.message }}</p>
+        <p class="text-xs text-zinc-400 mt-1">{{ a.date_creation|timesince }}</p>
+      </div>
+      {% empty %}
+      <p class="px-5 py-8 text-center text-sm text-zinc-400">Aucune alerte</p>
       {% endfor %}
     </div>
   </div>

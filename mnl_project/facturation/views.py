@@ -8,6 +8,7 @@ from django.views.generic import CreateView, DetailView
 from django.http import HttpResponse
 
 from production.models import StockFarine
+from production.lot_traceabilite import synchroniser_historique_contrat
 from .forms import BonRetraitForm
 from .models import Alerte, BonRetrait
 
@@ -63,6 +64,7 @@ class CreerBonRetraitView(ComptableRequiredMixin, CreateView):
         _decrementer_stock_sacs(bon.quantite_sacs)
         bon.contrat.statut = 'TERMINE'
         bon.contrat.save(update_fields=['statut'])
+        synchroniser_historique_contrat(bon.contrat)
         messages.success(self.request, f"Bon de retrait {bon.numero_bon} généré.")
         return redirect('facturation:bon_detail', pk=bon.pk)
 
@@ -96,12 +98,23 @@ class ImprimerBonRetraitView(LoginRequiredMixin, View):
 class ListeAlertesView(LoginRequiredMixin, View):
     def get(self, request):
         qs = Alerte.objects.filter(destinataire=request.user).order_by('-date_creation')
-        non_lues = qs.filter(lu=False).count()
+        type_filtre = request.GET.get('type', '').strip()
+        if type_filtre:
+            qs = qs.filter(type=type_filtre)
+        non_lues = Alerte.objects.filter(destinataire=request.user, lu=False)
+        compteurs = {
+            'RESULTAT_LABO': non_lues.filter(type='RESULTAT_LABO').count(),
+            'LIVRAISON_PRETE': non_lues.filter(type='LIVRAISON_PRETE').count(),
+            'RETARD': non_lues.filter(type='RETARD').count(),
+        }
         paginator = Paginator(qs, 25)
         page_obj = paginator.get_page(request.GET.get('page'))
         return render(request, 'facturation/alertes/list.html', {
             'page_obj': page_obj,
-            'non_lues': non_lues,
+            'non_lues': non_lues.count(),
+            'type_filtre': type_filtre,
+            'compteurs': compteurs,
+            'types_alertes': Alerte.TYPES,
         })
 
 

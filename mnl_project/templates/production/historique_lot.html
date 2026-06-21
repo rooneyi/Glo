@@ -1,33 +1,63 @@
 {% extends 'base.html' %}
 
 {% block title %}Historique lot {{ produit.reference_lot }} — MNL{% endblock %}
-{% block page_title %}Historique du lot {{ produit.reference_lot }}{% endblock %}
+{% block page_title %}Historique complet — {{ produit.reference_lot }}{% endblock %}
 {% block breadcrumb %}
 <p class="text-xs text-zinc-400">
-  <a href="{% url 'production:detail' produit.production.pk %}" class="hover:text-zinc-700">Production</a>
-  / Historique lot
+  <a href="{% url 'production:lots_list' %}" class="hover:text-zinc-700">Lots</a>
+  · <a href="{% url 'production:detail' produit.production.pk %}" class="hover:text-zinc-700">Production</a>
+  / {{ produit.reference_lot }}
 </p>
 {% endblock %}
 
 {% block content %}
-<div class="card overflow-hidden max-w-3xl">
-  <div class="px-6 py-4 border-b border-zinc-100">
-    <p class="text-sm text-zinc-600">{{ produit.nombre_sacs }} × {{ produit.get_type_sac_display }} — {{ produit.poids_total_kg|floatformat:0 }} kg</p>
-    <p class="text-xs text-zinc-400 mt-1">Statut : {{ produit.get_statut_lot_display }}</p>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
+  <div class="lg:col-span-2 card overflow-hidden">
+    <div class="px-6 py-4 border-b border-zinc-100">
+      <p class="text-sm text-zinc-600">{{ produit.nombre_sacs }} × {{ produit.get_type_sac_display }} — {{ produit.poids_total_kg|floatformat:0 }} kg</p>
+      <p class="text-xs text-zinc-400 mt-1">
+        Client : {{ contrat.client }} · Contrat {{ contrat.numero_contrat }} ·
+        Statut : {{ produit.get_statut_lot_display }}
+      </p>
+    </div>
+    <ol class="relative px-6 py-6">
+      {% for evt in evenements %}
+      <li class="relative pl-8 pb-8 last:pb-0 {% if not forloop.last %}border-l-2 border-zinc-200 ml-1.5{% endif %}">
+        <span class="absolute left-0 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white
+          {% if evt.type_evenement == 'CREATION' %}bg-zinc-400
+          {% elif evt.type_evenement == 'ANALYSE' %}bg-indigo-500
+          {% elif evt.type_evenement == 'MOUTURE' %}bg-orange-500
+          {% elif evt.type_evenement == 'ENSACHAGE' %}bg-blue-500
+          {% elif evt.type_evenement == 'CESSION' %}bg-amber-500
+          {% elif evt.type_evenement == 'VALIDATION' %}bg-green-500
+          {% elif evt.type_evenement == 'RETRAIT' %}bg-violet-500
+          {% else %}bg-zinc-400{% endif %}"></span>
+        <div>
+          <p class="text-sm font-semibold text-zinc-800">{{ evt.label }}</p>
+          <p class="text-sm text-zinc-600 mt-0.5">{{ evt.description }}</p>
+          {% if evt.quantite_sacs or evt.quantite_kg %}
+          <p class="text-xs text-zinc-500 mt-1">
+            {% if evt.quantite_sacs %}{{ evt.quantite_sacs }} sac(s){% endif %}
+            {% if evt.quantite_kg %} · {{ evt.quantite_kg|floatformat:0 }} kg{% endif %}
+          </p>
+          {% endif %}
+          <p class="text-xs text-zinc-400 mt-1">{{ evt.date_evenement|date:"d/m/Y H:i" }}{% if evt.auteur %} · {{ evt.auteur }}{% endif %}</p>
+        </div>
+      </li>
+      {% empty %}
+      <li class="py-10 text-center text-zinc-400 text-sm">Aucun événement enregistré</li>
+      {% endfor %}
+    </ol>
   </div>
-  <ol class="divide-y divide-zinc-100">
-    {% for evt in evenements %}
-    <li class="px-6 py-4 flex gap-4">
-      <div class="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0"></div>
-      <div>
-        <p class="text-sm font-medium text-zinc-800">{{ evt.get_type_evenement_display }}</p>
-        <p class="text-sm text-zinc-600 mt-0.5">{{ evt.description }}</p>
-        <p class="text-xs text-zinc-400 mt-1">{{ evt.date_evenement|date:"d/m/Y H:i" }}{% if evt.auteur %} · {{ evt.auteur.get_full_name }}{% endif %}</p>
-      </div>
-    </li>
-    {% empty %}
-    <li class="px-6 py-10 text-center text-zinc-400 text-sm">Aucun événement enregistré</li>
-    {% endfor %}
-  </ol>
+
+  <div class="space-y-4">
+    <div class="card p-5 text-sm space-y-2">
+      <p class="text-xs text-zinc-400 uppercase font-medium">Chaîne de traçabilité</p>
+      <p><span class="text-zinc-500">Production</span><br><span class="font-mono">{{ production.numero_production }}</span></p>
+      <p><span class="text-zinc-500">Meunier</span><br>{{ production.meunier.get_full_name }}</p>
+      <p><span class="text-zinc-500">Type mouture</span><br>{{ contrat.get_type_mouture_display }}</p>
+    </div>
+    <a href="{% url 'production:lots_list' %}" class="btn-secondary w-full justify-center text-xs">← Tous les lots</a>
+  </div>
 </div>
 {% endblock %}

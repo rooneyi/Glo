@@ -61,15 +61,20 @@ class ResultatLaboratoire(models.Model):
         return f"Résultat {self.echantillon} — {statut}"
 
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
         super().save(*args, **kwargs)
-        # Met à jour le statut de l'échantillon
         self.echantillon.statut = 'TESTE'
         self.echantillon.save(update_fields=['statut'])
-        # Crée une alerte pour le meunier
-        from facturation.models import Alerte
-        Alerte.objects.create(
-            type='RESULTAT_LABO',
-            message=(f"Résultat labo disponible pour {self.echantillon}. "
-                     f"Maïs {'conforme' if self.conforme else 'NON conforme'}."),
-            destinataire=self.echantillon.meunier,
-        )
+        if is_new:
+            from facturation.alertes_service import creer_alerte
+            conforme = 'conforme' if self.conforme else 'NON conforme'
+            msg = (
+                f"Résultat labo — {self.echantillon.numero_echantillon} : "
+                f"maïs {conforme}."
+            )
+            creer_alerte(
+                'RESULTAT_LABO', msg, self.echantillon.meunier,
+                cle_dedup=self.echantillon.numero_echantillon,
+            )
+            from production.lot_traceabilite import synchroniser_historique_contrat
+            synchroniser_historique_contrat(self.echantillon.reception.contrat)

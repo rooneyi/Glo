@@ -9,9 +9,10 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView
 
-from facturation.models import Alerte
+from facturation.alertes_service import creer_alerte
 from accounts.models import Utilisateur
 from .forms import ProductionLancerForm, ProductionTerminerForm, ProduitFiniForm
+from .lot_traceabilite import historique_complet
 from .models import Production, ProduitFini, StockFarine, BonCession, HistoriqueLot
 
 
@@ -104,13 +105,14 @@ class TerminerProductionView(MeunierRequiredMixin, View):
             prod.statut = 'TERMINE'
             prod.save()
             for comptable in Utilisateur.objects.filter(role='COMPTABLE', actif=True):
-                Alerte.objects.create(
-                    type='LIVRAISON_PRETE',
-                    message=(
+                creer_alerte(
+                    'LIVRAISON_PRETE',
+                    (
                         f"Production {prod.numero_production} terminée — "
                         f"{prod.quantite_farine_kg} kg de farine prêts pour retrait."
                     ),
-                    destinataire=comptable,
+                    comptable,
+                    cle_dedup=prod.numero_production,
                 )
             messages.success(request, f"Mouture {prod.numero_production} terminée.")
             return redirect('production:detail', pk=pk)
@@ -202,13 +204,14 @@ class GenererBonCessionView(MeunierRequiredMixin, View):
                 auteur=request.user,
             )
         for mag in Utilisateur.objects.filter(role='MAGASINIER', actif=True):
-            Alerte.objects.create(
-                type='LIVRAISON_PRETE',
-                message=(
+            creer_alerte(
+                'LIVRAISON_PRETE',
+                (
                     f"Bon de cession {bon.numero_bon} — "
                     f"{bon.nombre_sacs_25 + bon.nombre_sacs_50} sac(s) à recevoir."
                 ),
-                destinataire=mag,
+                mag,
+                cle_dedup=bon.numero_bon,
             )
         messages.success(request, f"Bon de cession {bon.numero_bon} généré.")
         return redirect('production:detail', pk=pk)
@@ -221,5 +224,30 @@ class HistoriqueLotView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['evenements'] = self.object.historique.select_related('auteur')
+        ctx['evenements'] = historique_complet(self.object)
+        ctx['production'] = self.object.production
+        ctx['contrat'] = self.object.production.contrat
         return ctx
+
+
+class ListeLotsView(LoginRequiredMixin, View):
+    """Liste de tous les lots avec accès à l'historique complet."""
+
+    def get(self, request):
+        qs = ProduitFini.objects.select_related(
+            'production__contrat__client',
+        ).order_by('-date_ensachage')
+        statut = request.GET.get('statut', '').strip()
+        q = request.GET.get('q', '').strip()
+        if statut:
+            qs = qs.filter(statut_lot=statut)
+        if q:
+            qs = qs.filter(reference_lot__icontains=q) | qs.filter(
+                production__contrat__client__nom__icontains=q,
+            )
+        paginator = Paginator(qs, 25)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'production/lots_list.html', {
+            'page_obj': page_obj,
+            'statuts': ProduitFini.STATUTS_LOT,
+        })

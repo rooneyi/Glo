@@ -1,4 +1,3 @@
-from datetime import timedelta
 import json
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -7,32 +6,12 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.views.generic import TemplateView
 
-from accounts.models import Utilisateur
+from facturation.alertes_service import verifier_alertes_retard
 from facturation.models import Alerte, BonRetrait
 from contrats.models import ContratMouture
 from laboratoire.models import Echantillon, ResultatLaboratoire
 from magasin.models import Reception, StockMP
 from production.models import BonCession, Production, ProduitFini, StockFarine
-
-
-def _verifier_alertes_retard():
-    """Crée une alerte RETARD pour les contrats bloqués > 30 jours."""
-    seuil = timezone.now().date() - timedelta(days=30)
-    contrats = ContratMouture.objects.filter(statut='EN_COURS', date_contrat__lt=seuil)
-    for contrat in contrats:
-        for comptable in Utilisateur.objects.filter(role='COMPTABLE', actif=True):
-            existe = Alerte.objects.filter(
-                type='RETARD',
-                message__contains=contrat.numero_contrat,
-                destinataire=comptable,
-                lu=False,
-            ).exists()
-            if not existe:
-                Alerte.objects.create(
-                    type='RETARD',
-                    message=f"Retard détecté — contrat {contrat.numero_contrat} ({contrat.client}) en cours depuis plus de 30 jours.",
-                    destinataire=comptable,
-                )
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -43,12 +22,21 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         now = timezone.now()
 
-        _verifier_alertes_retard()
+        verifier_alertes_retard()
 
-        alertes_non_lues = Alerte.objects.filter(destinataire=user, lu=False).count()
+        alertes_qs = Alerte.objects.filter(destinataire=user, lu=False)
+        alertes_non_lues = alertes_qs.count()
         ctx['alerte_count'] = alertes_non_lues
+        ctx['alertes_recentes'] = Alerte.objects.filter(
+            destinataire=user,
+        ).order_by('-date_creation')[:8]
 
-        kpi = {'alertes_non_lues': alertes_non_lues}
+        kpi = {
+            'alertes_non_lues': alertes_non_lues,
+            'alertes_resultat_labo': alertes_qs.filter(type='RESULTAT_LABO').count(),
+            'alertes_livraison': alertes_qs.filter(type='LIVRAISON_PRETE').count(),
+            'alertes_retard': alertes_qs.filter(type='RETARD').count(),
+        }
 
         if user.role in ('ADMIN', 'MAGASINIER'):
             stock_mp = StockMP.objects.aggregate(total=Sum('quantite_disponible_kg'))

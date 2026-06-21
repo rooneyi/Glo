@@ -158,7 +158,7 @@ class HistoriqueLot(models.Model):
         Utilisateur, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='evenements_lot',
     )
-    date_evenement  = models.DateTimeField(auto_now_add=True)
+    date_evenement  = models.DateTimeField(default=timezone.now)
 
     class Meta:
         verbose_name = 'Historique lot'
