@@ -1,5 +1,7 @@
 # Python / Django
 venv/
+mnl_project/venv/
+**/.venv/
 __pycache__/
 *.py[cod]
 *.sqlite3
