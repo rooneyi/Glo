@@ -9,7 +9,22 @@
 {% endblock %}
 
 {% block content %}
+
+{% if not dashboard_built %}
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+  <p class="font-semibold">Dashboard React non compilé</p>
+  <p class="mt-1 text-amber-800">
+    Après un clone, les dépendances Node ne sont pas dans Git. Compilez le dashboard une fois :
+  </p>
+  <pre class="mt-3 overflow-x-auto rounded-lg bg-zinc-900 px-4 py-3 text-xs text-green-400">cd mnl_project
+chmod +x scripts/setup-frontend.sh
+./scripts/setup-frontend.sh</pre>
+  <p class="mt-2 text-xs text-amber-700">Prérequis : Node.js 18+ et npm. Puis relancez <code class="rounded bg-amber-100 px-1">python manage.py runserver</code>.</p>
+</div>
+{% endif %}
+
 <div id="dashboard-root" class="min-h-[480px]">
+  {% if dashboard_built %}
   <div class="animate-pulse space-y-6" id="dashboard-skeleton">
     <div class="h-8 w-48 rounded-lg bg-zinc-200"></div>
     <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
@@ -19,7 +34,15 @@
     </div>
     <div class="h-72 rounded-xl bg-zinc-200"></div>
   </div>
+  {% else %}
+  <div class="card p-8 text-center text-zinc-500">
+    <p class="text-sm">Les graphiques apparaîtront après <code>./scripts/setup-frontend.sh</code></p>
+  </div>
+  {% endif %}
 </div>
+
+{% if dashboard_built %}
 {{ dashboard_payload|json_script:"dashboard-data" }}
 <script type="module" src="{% static 'dashboard/dashboard.js' %}"></script>
+{% endif %}
 {% endblock %}

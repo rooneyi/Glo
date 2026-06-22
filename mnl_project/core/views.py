@@ -1,6 +1,7 @@
 import json
 from datetime import date, datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Avg, Count, Q, Sum
@@ -131,6 +132,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             alertes=list(ctx['alertes_recentes']),
             activite=activite,
         )
+        ctx['dashboard_built'] = (
+            settings.BASE_DIR / 'static' / 'dashboard' / 'dashboard.js'
+        ).is_file()
         return ctx
 
     @staticmethod
