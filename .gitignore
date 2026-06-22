@@ -1,13 +1,19 @@
-./build/
-./dist/
-./node_modules/
-./package-lock.json
-./package.json
-./yarn.lock
-./yarn-error.log
-./yarn-debug.log
-./yarn-debug.log.json
-./yarn-debug.log.json.gz
-./yarn-debug.log.json.gz.json
-./yarn-debug.log.json.gz.json.gz
-./venv/
+# Python / Django
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+.env
+.env.*
+
+# Node — dépendances (tous niveaux)
+node_modules/
+
+# Dashboard React — build & deps (sources dans frontend/dashboard/)
+mnl_project/frontend/dashboard/node_modules/
+mnl_project/static/dashboard/*
+!mnl_project/static/dashboard/.gitkeep
+
+# Artefacts build génériques
+build/
+dist/
