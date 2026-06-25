@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BonRetrait, Alerte
+from .models import BonRetrait, Alerte, NotificationClient
 
 @admin.register(BonRetrait)
 class BonRetraitAdmin(admin.ModelAdmin):
@@ -10,3 +10,8 @@ class BonRetraitAdmin(admin.ModelAdmin):
 class AlerteAdmin(admin.ModelAdmin):
     list_display  = ('type', 'destinataire', 'lu', 'date_creation')
     list_filter   = ('type', 'lu')
+
+@admin.register(NotificationClient)
+class NotificationClientAdmin(admin.ModelAdmin):
+    list_display = ('type', 'client', 'lu', 'magasinier', 'date_creation')
+    list_filter = ('type', 'lu')

@@ -11,6 +11,7 @@ from production.models import StockFarine
 from production.lot_traceabilite import synchroniser_historique_contrat
 from .forms import BonRetraitForm
 from .models import Alerte, BonRetrait
+from .notifications_client import notifier_retrait_effectue
 
 
 class ComptableRequiredMixin(LoginRequiredMixin):
@@ -65,6 +66,7 @@ class CreerBonRetraitView(ComptableRequiredMixin, CreateView):
         bon.contrat.statut = 'TERMINE'
         bon.contrat.save(update_fields=['statut'])
         synchroniser_historique_contrat(bon.contrat)
+        notifier_retrait_effectue(bon)
         messages.success(self.request, f"Bon de retrait {bon.numero_bon} généré.")
         return redirect('facturation:bon_detail', pk=bon.pk)
 

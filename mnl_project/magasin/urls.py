@@ -11,4 +11,5 @@ urlpatterns = [
     path('stock/',                   views.StockMPView.as_view(),           name='stock'),
     path('bons-cession/',            views.ListeBonsCessionView.as_view(),  name='bons_cession_list'),
     path('bons-cession/<int:pk>/recevoir/', views.RecevoirBonCessionView.as_view(), name='bon_cession_recevoir'),
+    path('bons-cession/<int:pk>/notifier-client/', views.SignalerPretClientView.as_view(), name='bon_cession_notifier'),
 ]

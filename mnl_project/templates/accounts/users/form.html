@@ -86,6 +86,20 @@
         </div>
       </div>
 
+      <div>
+        <label class="form-label" for="{{ form.profil_client.id_for_label }}">Fiche client liée</label>
+        <select name="profil_client" id="{{ form.profil_client.id_for_label }}" class="form-input">
+          <option value="">— Aucune —</option>
+          {% for val, label in form.profil_client.field.choices %}
+          {% if val %}
+          <option value="{{ val }}" {% if form.profil_client.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        <p class="text-xs text-zinc-400 mt-1">Obligatoire pour le rôle Client — permet l'espace notifications et retraits.</p>
+        {% if form.profil_client.errors %}<p class="form-error">{{ form.profil_client.errors|join:", " }}</p>{% endif %}
+      </div>
+
       {% if not object %}
       <!-- Mot de passe (création seulement) -->
       <div class="p-4 bg-zinc-50 rounded-lg border border-zinc-200 space-y-4">

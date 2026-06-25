@@ -25,6 +25,11 @@ NB_MOIS_STATS = 12
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'core/dashboard.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role == 'CLIENT':
+            return redirect('clients:espace')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user

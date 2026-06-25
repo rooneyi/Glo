@@ -26,6 +26,7 @@ class Utilisateur(AbstractUser):
         ('MAGASINIER',  'Magasinier'),
         ('LABORANTIN',  'Laborantin'),
         ('MEUNIER',     'Meunier'),
+        ('CLIENT',      'Client'),
     ]
 
     username   = None
@@ -35,6 +36,11 @@ class Utilisateur(AbstractUser):
     telephone  = models.CharField(max_length=20, blank=True)
     role       = models.CharField(max_length=20, choices=ROLES)
     actif      = models.BooleanField(default=True)
+    profil_client = models.OneToOneField(
+        'clients.Client', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='compte_utilisateur',
+        help_text="Fiche client liée (rôle Client uniquement)",
+    )
 
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = ['nom', 'prenom', 'role']
@@ -62,3 +68,5 @@ class Utilisateur(AbstractUser):
     def est_laborantin(self):  return self.role == 'LABORANTIN'
     @property
     def est_meunier(self):     return self.role == 'MEUNIER'
+    @property
+    def est_client(self):      return self.role == 'CLIENT'

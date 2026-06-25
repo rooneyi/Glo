@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Mon espace — MNL{% endblock %}
+{% block page_title %}Mon espace client{% endblock %}
+{% block breadcrumb %}
+<p class="text-xs text-zinc-400">Bienvenue, {{ client }}</p>
+{% endblock %}
+
+{% block topbar_actions %}
+{% if non_lues %}
+<form method="post" action="{% url 'clients:notifications_tout_lu' %}">
+  {% csrf_token %}
+  <button type="submit" class="btn-secondary text-xs">Tout marquer comme lu</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Notifications -->
+  <div class="lg:col-span-2 space-y-4">
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-zinc-100 flex justify-between items-center">
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-900">Mes notifications</h2>
+          <p class="text-xs text-zinc-400">{{ non_lues }} non lue{{ non_lues|pluralize }}</p>
+        </div>
+      </div>
+      <div class="divide-y divide-zinc-100">
+        {% for n in notifications %}
+        <div class="px-5 py-4 flex gap-4 {% if not n.lu %}bg-emerald-50/40{% endif %}">
+          <div class="w-2 h-2 rounded-full mt-2 shrink-0 {% if n.type == 'COMMANDE_PRETE' %}bg-emerald-500{% else %}bg-violet-500{% endif %}"></div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold {% if n.type == 'COMMANDE_PRETE' %}text-emerald-700{% else %}text-violet-700{% endif %}">
+              {{ n.get_type_display }}
+            </p>
+            <p class="text-sm text-zinc-800 mt-0.5">{{ n.message }}</p>
+            <p class="text-xs text-zinc-400 mt-1">
+              {{ n.date_creation|date:"d/m/Y H:i" }}
+              {% if n.magasinier %} · signalé par {{ n.magasinier.get_full_name }}{% endif %}
+            </p>
+          </div>
+          {% if not n.lu %}
+          <form method="post" action="{% url 'clients:notification_lu' n.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-xs text-blue-600 hover:underline whitespace-nowrap">Lu</button>
+          </form>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="py-12 text-center text-sm text-zinc-400">Aucune notification pour le moment</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Historique retraits -->
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-zinc-100">
+        <h2 class="text-sm font-semibold text-zinc-900">Historique de mes retraits</h2>
+      </div>
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 border-b">
+          <tr>
+            <th class="table-th">Bon</th>
+            <th class="table-th">Contrat</th>
+            <th class="table-th">Sacs</th>
+            <th class="table-th">Date</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          {% for b in retraits %}
+          <tr class="hover:bg-zinc-50">
+            <td class="table-td font-mono text-xs">{{ b.numero_bon }}</td>
+            <td class="table-td font-mono text-xs">{{ b.contrat.numero_contrat }}</td>
+            <td class="table-td font-semibold">{{ b.quantite_sacs }}</td>
+            <td class="table-td text-zinc-400">{{ b.date_retrait|date:"d/m/Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="py-10 text-center text-zinc-400">Aucun retrait enregistré</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Suivi commandes -->
+  <div class="card overflow-hidden h-fit">
+    <div class="px-5 py-4 border-b border-zinc-100">
+      <h2 class="text-sm font-semibold text-zinc-900">Mes commandes</h2>
+      <p class="text-xs text-zinc-400 mt-0.5">Suivi de vos contrats de mouture</p>
+    </div>
+    <div class="divide-y divide-zinc-100">
+      {% for c in contrats %}
+      <div class="px-5 py-4">
+        <p class="font-mono text-xs text-zinc-500">{{ c.numero_contrat }}</p>
+        <p class="text-sm font-medium text-zinc-800 mt-0.5">{{ c.quantite_kg|floatformat:0 }} kg · {{ c.get_type_mouture_display }}</p>
+        <span class="inline-block mt-2 text-xs px-2 py-0.5 rounded-full
+          {% if c.statut == 'TERMINE' %}bg-green-50 text-green-700
+          {% elif c.statut == 'EN_COURS' %}bg-blue-50 text-blue-700
+          {% else %}bg-zinc-100 text-zinc-600{% endif %}">
+          {{ c.get_statut_display }}
+        </span>
+      </div>
+      {% empty %}
+      <p class="px-5 py-10 text-center text-sm text-zinc-400">Aucune commande</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

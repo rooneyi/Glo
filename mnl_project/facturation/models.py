@@ -56,3 +56,34 @@ class Alerte(models.Model):
 
     def __str__(self):
         return f"[{self.get_type_display()}] → {self.destinataire}"
+
+
+class NotificationClient(models.Model):
+    """Notifications pour les clients (commande prête, retrait, etc.)."""
+    TYPES = [
+        ('COMMANDE_PRETE',   'Commande prête au retrait'),
+        ('RETRAIT_EFFECTUE', 'Retrait effectué'),
+    ]
+
+    type            = models.CharField(max_length=25, choices=TYPES)
+    message         = models.TextField()
+    lu              = models.BooleanField(default=False)
+    date_creation   = models.DateTimeField(auto_now_add=True)
+    client          = models.ForeignKey(Client, on_delete=models.CASCADE,
+                                        related_name='notifications')
+    contrat         = models.ForeignKey(
+        ContratMouture, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='notifications_client',
+    )
+    magasinier      = models.ForeignKey(
+        Utilisateur, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='notifications_client_emises',
+    )
+
+    class Meta:
+        verbose_name = 'Notification client'
+        verbose_name_plural = 'Notifications clients'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f"[{self.get_type_display()}] → {self.client}"

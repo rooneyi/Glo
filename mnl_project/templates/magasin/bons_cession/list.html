@@ -39,10 +39,13 @@
           {% if bon.statut == 'EN_ATTENTE' %}
           <form method="post" action="{% url 'magasin:bon_cession_recevoir' bon.pk %}" class="inline">
             {% csrf_token %}
-            <button type="submit" class="btn-primary text-xs py-1.5 px-3">Recevoir</button>
+            <button type="submit" class="btn-primary text-xs py-1.5 px-3">Recevoir & notifier client</button>
           </form>
           {% else %}
-          <span class="text-xs text-zinc-400">{{ bon.date_reception|date:"d/m/Y H:i" }}</span>
+          <form method="post" action="{% url 'magasin:bon_cession_notifier' bon.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-secondary text-xs py-1.5 px-3">Rappeler au client</button>
+          </form>
           {% endif %}
         </td>
       </tr>
