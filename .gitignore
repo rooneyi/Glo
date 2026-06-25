@@ -3,7 +3,10 @@ venv/
 mnl_project/venv/
 **/.venv/
 __pycache__/
+**/__pycache__/
+**/migrations/__pycache__/
 *.py[cod]
+*$py.class
 *.sqlite3
 .env
 .env.*
