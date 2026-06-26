@@ -62,7 +62,7 @@ class NotificationClient(models.Model):
     """Notifications pour les clients (commande prête, retrait, etc.)."""
     TYPES = [
         ('COMMANDE_PRETE',   'Commande prête au retrait'),
-        ('RETRAIT_EFFECTUE', 'Retrait effectué'),
+        ('RETRAIT_EFFECTUE', 'Bon de retrait disponible'),
     ]
 
     type            = models.CharField(max_length=25, choices=TYPES)

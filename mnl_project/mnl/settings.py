@@ -89,3 +89,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
+
+# Infos affichées dans les notifications « commande prête au retrait »
+MNL_RETRAIT_LIEU = 'Magasin farine — Minoterie de Lubumbashi (MNL), Gécamines'
+MNL_RETRAIT_HORAIRES = 'du lundi au vendredi, de 8h00 à 16h00'
+MNL_RETRAIT_CONTACT = 'la comptabilité MNL'

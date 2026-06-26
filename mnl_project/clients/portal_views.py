@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views import View
 
 from contrats.models import ContratMouture
@@ -37,12 +38,18 @@ class EspaceClientView(ClientRequiredMixin, View):
             client=client,
         ).select_related('contrat').order_by('-date_retrait')[:20]
 
+        onglets_valides = {'notifications', 'commandes', 'retraits'}
+        onglet = request.GET.get('onglet', 'notifications')
+        if onglet not in onglets_valides:
+            onglet = 'notifications'
+
         return render(request, 'clients/espace.html', {
             'client': client,
             'notifications': notifications,
             'non_lues': non_lues,
             'contrats': contrats,
             'retraits': retraits,
+            'onglet': onglet,
         })
 
 
@@ -53,7 +60,7 @@ class MarquerNotificationClientLuView(ClientRequiredMixin, View):
         )
         notif.lu = True
         notif.save(update_fields=['lu'])
-        return redirect('clients:espace')
+        return redirect(f"{reverse('clients:espace')}?onglet=notifications")
 
 
 class MarquerToutesNotificationsLuesView(ClientRequiredMixin, View):
@@ -62,4 +69,4 @@ class MarquerToutesNotificationsLuesView(ClientRequiredMixin, View):
             client=request.user.profil_client, lu=False,
         ).update(lu=True)
         messages.success(request, "Toutes les notifications ont été marquées comme lues.")
-        return redirect('clients:espace')
+        return redirect(f"{reverse('clients:espace')}?onglet=notifications")

@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView
 
-from facturation.notifications_client import notifier_commande_prete
+from facturation.notifications_client import message_commande_prete_retrait, notifier_commande_prete
 from production.models import BonCession, HistoriqueLot, ProduitFini
 from .forms import ReceptionForm
 from .models import Reception, StockMP
@@ -149,7 +149,7 @@ class RecevoirBonCessionView(MagasinierRequiredMixin, View):
         if notifier_commande_prete(contrat, request.user):
             messages.success(
                 request,
-                f"Bon {bon.numero_bon} reçu — le client {contrat.client} a été notifié.",
+                f"Bon {bon.numero_bon} reçu — notification envoyée à {contrat.client}.",
             )
         else:
             messages.success(request, f"Bon {bon.numero_bon} reçu — lots validés.")
@@ -164,7 +164,11 @@ class SignalerPretClientView(MagasinierRequiredMixin, View):
         contrat = bon.production.contrat
         notif = notifier_commande_prete(contrat, request.user)
         if notif:
-            messages.success(request, f"Notification envoyée à {contrat.client}.")
+            messages.success(
+                request,
+                f"Notification envoyée à {contrat.client} : "
+                f"{message_commande_prete_retrait(contrat).splitlines()[0]}",
+            )
         else:
             messages.info(request, f"{contrat.client} a déjà une notification en attente.")
         return redirect('magasin:bons_cession_list')
