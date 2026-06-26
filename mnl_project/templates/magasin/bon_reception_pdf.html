@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  {% load static %}
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 30px 40px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1d4ed8; padding-bottom: 16px; margin-bottom: 24px; }
-    .logo-block { }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #c41e1e; padding-bottom: 16px; margin-bottom: 24px; }
+    .logo-block img { height: 52px; width: auto; margin-bottom: 6px; }
     .logo-title { font-size: 18pt; font-weight: bold; color: #1d4ed8; }
     .logo-sub { font-size: 9pt; color: #666; margin-top: 2px; }
     .doc-title { text-align: right; }
@@ -37,7 +38,7 @@
 
   <div class="header">
     <div class="logo-block">
-      <div class="logo-title">MNL — Gécamines</div>
+      <img src="{% static 'images/logo-mnl.png' %}" alt="MNL — Gécamines">
       <div class="logo-sub">Minoterie de Lubumbashi</div>
       <div class="logo-sub">Lubumbashi, République Démocratique du Congo</div>
     </div>
