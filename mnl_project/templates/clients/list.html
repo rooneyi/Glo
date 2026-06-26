@@ -29,6 +29,7 @@
         <tr>
           <th class="table-th">Client</th>
           <th class="table-th">Téléphone</th>
+          <th class="table-th">Accès en ligne</th>
           <th class="table-th">Adresse</th>
           <th class="table-th">Contrats</th>
           <th class="table-th">Enregistré le</th>
@@ -50,6 +51,13 @@
             </div>
           </td>
           <td class="table-td text-zinc-500">{{ c.telephone }}</td>
+          <td class="table-td">
+            {% if c.compte_utilisateur %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Compte actif</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">Sans compte</span>
+            {% endif %}
+          </td>
           <td class="table-td text-zinc-500 max-w-xs truncate">{{ c.adresse|default:"—" }}</td>
           <td class="table-td">
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
@@ -68,7 +76,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="py-16 text-center text-sm text-zinc-400">Aucun client enregistré</td></tr>
+        <tr><td colspan="7" class="py-16 text-center text-sm text-zinc-400">Aucun client enregistré</td></tr>
         {% endfor %}
       </tbody>
     </table>

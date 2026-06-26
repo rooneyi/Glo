@@ -43,9 +43,11 @@
       </div>
 
       <div>
-        <label class="form-label" for="{{ form.email.id_for_label }}">E-mail</label>
+        <label class="form-label" for="{{ form.email.id_for_label }}">E-mail <span class="text-red-500">*</span></label>
         <input type="email" name="email" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default:'' }}"
-          class="form-input" placeholder="jean@example.com">
+          class="form-input {% if form.email.errors %}border-red-400{% endif %}" placeholder="jean@example.com" required>
+        <p class="text-xs text-zinc-400 mt-1">Un compte espace client sera créé et les identifiants envoyés à cette adresse.</p>
+        {% if form.email.errors %}<p class="form-error">{{ form.email.errors|join:", " }}</p>{% endif %}
       </div>
 
       <div>

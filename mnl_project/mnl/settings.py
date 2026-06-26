@@ -94,3 +94,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 MNL_RETRAIT_LIEU = 'Magasin farine — Minoterie de Lubumbashi (MNL), Gécamines'
 MNL_RETRAIT_HORAIRES = 'du lundi au vendredi, de 8h00 à 16h00'
 MNL_RETRAIT_CONTACT = 'la comptabilité MNL'
+
+# E-mail — en dev : affichage dans la console ; en prod : configurer SMTP via variables d'environnement
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'MNL Gécamines <noreply@mnl-gecamines.local>'
