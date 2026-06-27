@@ -7,6 +7,8 @@ from django.views import View
 from contrats.models import ContratMouture
 from facturation.models import BonRetrait, NotificationClient
 
+from .historique_client import historique_client
+
 
 class ClientRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
@@ -35,8 +37,10 @@ class EspaceClientView(ClientRequiredMixin, View):
         ).select_related('production').order_by('-date_contrat')[:15]
 
         retraits = BonRetrait.objects.filter(
-            client=client,
+            contrat__client=client,
         ).select_related('contrat').order_by('-date_retrait')[:20]
+
+        historique = historique_client(client)
 
         onglets_valides = {'notifications', 'commandes', 'retraits'}
         onglet = request.GET.get('onglet', 'notifications')
@@ -49,6 +53,7 @@ class EspaceClientView(ClientRequiredMixin, View):
             'non_lues': non_lues,
             'contrats': contrats,
             'retraits': retraits,
+            'historique': historique,
             'onglet': onglet,
         })
 

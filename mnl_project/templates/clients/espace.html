@@ -110,29 +110,28 @@
 <div class="card overflow-hidden">
   <div class="px-5 py-4 border-b border-zinc-100">
     <h2 class="text-sm font-semibold text-zinc-900">Historique de mes retraits</h2>
+    <p class="text-xs text-zinc-400 mt-0.5">Notifications reçues et bons de retrait</p>
   </div>
-  <table class="w-full text-sm">
-    <thead class="bg-zinc-50 border-b">
-      <tr>
-        <th class="table-th">Bon</th>
-        <th class="table-th">Contrat</th>
-        <th class="table-th">Sacs</th>
-        <th class="table-th">Date</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-zinc-100">
-      {% for b in retraits %}
-      <tr class="hover:bg-zinc-50">
-        <td class="table-td font-mono text-xs">{{ b.numero_bon }}</td>
-        <td class="table-td font-mono text-xs">{{ b.contrat.numero_contrat }}</td>
-        <td class="table-td font-semibold">{{ b.quantite_sacs }}</td>
-        <td class="table-td text-zinc-400">{{ b.date_retrait|date:"d/m/Y" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4" class="py-10 text-center text-zinc-400">Aucun retrait enregistré</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="divide-y divide-zinc-100">
+    {% for evt in historique %}
+    <div class="px-5 py-4 flex gap-4">
+      <div class="w-2 h-2 rounded-full mt-2 shrink-0
+        {% if evt.categorie == 'retrait' %}bg-violet-500
+        {% else %}bg-emerald-500{% endif %}"></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold
+          {% if evt.categorie == 'retrait' %}text-violet-700{% else %}text-emerald-700{% endif %}">
+          {{ evt.titre }}
+          {% if evt.contrat_numero %}<span class="font-mono font-normal text-zinc-500"> · {{ evt.contrat_numero }}</span>{% endif %}
+        </p>
+        <p class="text-sm text-zinc-800 mt-1 whitespace-pre-line leading-relaxed">{{ evt.detail }}</p>
+        <p class="text-xs text-zinc-400 mt-2">{{ evt.date|date:"d/m/Y H:i" }}</p>
+      </div>
+    </div>
+    {% empty %}
+    <p class="py-12 text-center text-sm text-zinc-400">Aucun événement pour le moment</p>
+    {% endfor %}
+  </div>
 </div>
 {% endif %}
 

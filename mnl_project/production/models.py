@@ -145,6 +145,7 @@ class HistoriqueLot(models.Model):
         ('ENSACHAGE',  'Ensachage'),
         ('CESSION',    'Bon de cession'),
         ('VALIDATION', 'Validation magasin'),
+        ('NOTIFICATION', 'Notification client'),
         ('RETRAIT',    'Retrait client'),
     ]
 

@@ -7,6 +7,31 @@ from contrats.models import ContratMouture
 from .models import BonRetrait, NotificationClient
 
 
+def _enregistrer_historique_lots(contrat: ContratMouture, description: str, auteur) -> None:
+    """Trace une notification client dans l'historique de chaque lot du contrat."""
+    from django.core.exceptions import ObjectDoesNotExist
+    from production.models import HistoriqueLot
+
+    try:
+        produits = contrat.production.produits_finis.all()
+    except ObjectDoesNotExist:
+        return
+
+    fragment = contrat.numero_contrat
+    for produit in produits:
+        if produit.historique.filter(
+            type_evenement='NOTIFICATION',
+            description__contains=fragment,
+        ).exists():
+            continue
+        HistoriqueLot.objects.create(
+            produit_fini=produit,
+            type_evenement='NOTIFICATION',
+            description=description,
+            auteur=auteur,
+        )
+
+
 def _resume_sacs_contrat(contrat: ContratMouture) -> tuple[int, str]:
     """Retourne (total_sacs, détail lisible par type de sac)."""
     try:
@@ -74,13 +99,19 @@ def notifier_commande_prete(contrat: ContratMouture, magasinier) -> Notification
     ).exists():
         return None
 
-    return NotificationClient.objects.create(
+    notif = NotificationClient.objects.create(
         type='COMMANDE_PRETE',
         message=message_commande_prete_retrait(contrat),
         client=contrat.client,
         contrat=contrat,
         magasinier=magasinier,
     )
+    _enregistrer_historique_lots(
+        contrat,
+        f"Notification client — commande {contrat.numero_contrat} prête au retrait",
+        magasinier,
+    )
+    return notif
 
 
 def notifier_retrait_effectue(bon: BonRetrait) -> NotificationClient:
@@ -94,9 +125,15 @@ def notifier_retrait_effectue(bon: BonRetrait) -> NotificationClient:
         f"Vous pouvez passer retirer votre farine au {lieu}, {horaires}.\n"
         f"Présentez ce bon de retrait et une pièce d'identité au magasinier."
     )
-    return NotificationClient.objects.create(
+    notif = NotificationClient.objects.create(
         type='RETRAIT_EFFECTUE',
         message=msg,
         client=bon.client,
         contrat=bon.contrat,
     )
+    _enregistrer_historique_lots(
+        bon.contrat,
+        f"Notification client — bon de retrait {bon.numero_bon} disponible",
+        bon.comptable,
+    )
+    return notif

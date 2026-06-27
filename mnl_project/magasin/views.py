@@ -11,6 +11,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView
 
 from facturation.notifications_client import message_commande_prete_retrait, notifier_commande_prete
+from production.lot_traceabilite import synchroniser_historique_contrat
 from production.models import BonCession, HistoriqueLot, ProduitFini
 from .forms import ReceptionForm
 from .models import Reception, StockMP
@@ -146,6 +147,7 @@ class RecevoirBonCessionView(MagasinierRequiredMixin, View):
             )
 
         contrat = bon.production.contrat
+        synchroniser_historique_contrat(contrat)
         if notifier_commande_prete(contrat, request.user):
             messages.success(
                 request,
